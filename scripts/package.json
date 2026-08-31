@@ -1,0 +1,14 @@
+{
+  "name": "invosnap-vision-ocr-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "InvoSnap 送貨單拍照辨識驗證腳本（尚未執行，需自備 ANTHROPIC_API_KEY 才會產生API用量）",
+  "type": "module",
+  "main": "claude-vision-ocr.js",
+  "scripts": {
+    "ocr": "node claude-vision-ocr.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0"
+  }
+}

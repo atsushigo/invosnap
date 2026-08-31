@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InvoSnap 進貨快照 — 專案文件</title>
+<style>
+  :root{
+    --bg:#f7f5f2;
+    --bg-panel:#ffffff;
+    --bg-sidebar:#fbfaf8;
+    --border:#e4dfd8;
+    --text:#2a2622;
+    --text-dim:#6b6459;
+    --accent:#b3502b;
+    --accent-soft:#f4e3d8;
+    --accent-strong:#8a3c1f;
+    --code-bg:#f1ede6;
+    --table-head:#efe7dd;
+    --table-alt:#faf8f5;
+    --shadow:0 1px 3px rgba(40,30,20,0.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1c1a17;
+      --bg-panel:#242220;
+      --bg-sidebar:#201e1b;
+      --border:#3a362f;
+      --text:#ece7e0;
+      --text-dim:#a89f92;
+      --accent:#e0885a;
+      --accent-soft:#3a2a1f;
+      --accent-strong:#f0a578;
+      --code-bg:#2c2925;
+      --table-head:#2f2b26;
+      --table-alt:#262320;
+      --shadow:0 1px 3px rgba(0,0,0,0.3);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1c1a17;
+    --bg-panel:#242220;
+    --bg-sidebar:#201e1b;
+    --border:#3a362f;
+    --text:#ece7e0;
+    --text-dim:#a89f92;
+    --accent:#e0885a;
+    --accent-soft:#3a2a1f;
+    --accent-strong:#f0a578;
+    --code-bg:#2c2925;
+    --table-head:#2f2b26;
+    --table-alt:#262320;
+    --shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    line-height:1.7;
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* Sidebar */
+  nav.sidebar{
+    width:260px;
+    flex-shrink:0;
+    background:var(--bg-sidebar);
+    border-right:1px solid var(--border);
+    padding:24px 16px;
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow-y:auto;
+  }
+  .brand{
+    padding:0 8px 20px 8px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:16px;
+  }
+  .brand .name{
+    font-size:1.05rem;
+    font-weight:700;
+    color:var(--accent-strong);
+  }
+  .brand .sub{
+    font-size:0.78rem;
+    color:var(--text-dim);
+    margin-top:2px;
+  }
+  .navlist{list-style:none;margin:0;padding:0;}
+  .navlist li{margin-bottom:2px;}
+  .navlist button{
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:0.88rem;
+    padding:9px 10px;
+    border-radius:8px;
+    cursor:pointer;
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    font-family:inherit;
+    line-height:1.35;
+  }
+  .navlist button .idx{
+    color:var(--text-dim);
+    font-variant-numeric:tabular-nums;
+    flex-shrink:0;
+    opacity:0.6;
+  }
+  .navlist button:hover{background:var(--accent-soft);color:var(--text);}
+  .navlist button.active{
+    background:var(--accent-soft);
+    color:var(--accent-strong);
+    font-weight:600;
+  }
+  .navlist button.active .idx{color:var(--accent-strong);opacity:1;}
+
+  /* Main */
+  main{
+    flex:1;
+    max-width:900px;
+    margin:0 auto;
+    padding:40px 32px 100px 32px;
+    min-width:0;
+  }
+  section.page{display:none;}
+  section.page.active{display:block;animation:fade .15s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+  h1{font-size:1.7rem;margin:0 0 6px 0;color:var(--text);}
+  h1 .tag{
+    display:inline-block;
+    font-size:0.7rem;
+    font-weight:600;
+    color:var(--accent-strong);
+    background:var(--accent-soft);
+    padding:2px 9px;
+    border-radius:999px;
+    margin-left:10px;
+    vertical-align:middle;
+  }
+  .page-desc{color:var(--text-dim);font-size:0.95rem;margin-bottom:28px;}
+  h2{
+    font-size:1.2rem;
+    margin:34px 0 12px 0;
+    padding-bottom:8px;
+    border-bottom:2px solid var(--accent-soft);
+    color:var(--accent-strong);
+  }
+  h3{font-size:1.02rem;margin:22px 0 8px 0;color:var(--text);}
+  p{margin:10px 0;color:var(--text);}
+  a{color:var(--accent);}
+  strong{color:var(--text);}
+  ul,ol{margin:8px 0;padding-left:22px;}
+  li{margin:4px 0;}
+  li::marker{color:var(--accent);}
+
+  .callout{
+    background:var(--accent-soft);
+    border-left:3px solid var(--accent);
+    padding:12px 16px;
+    border-radius:6px;
+    margin:16px 0;
+    font-size:0.92rem;
+  }
+  .callout.conclusion::before{
+    content:"結論";
+    display:block;
+    font-size:0.72rem;
+    font-weight:700;
+    color:var(--accent-strong);
+    margin-bottom:4px;
+    letter-spacing:0.05em;
+  }
+
+  code{
+    background:var(--code-bg);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:0.85em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  pre{
+    background:var(--code-bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:14px 16px;
+    overflow-x:auto;
+    font-size:0.82rem;
+    line-height:1.55;
+    margin:14px 0;
+  }
+  pre code{background:none;padding:0;}
+
+  .table-wrap{overflow-x:auto;margin:16px 0;border-radius:8px;border:1px solid var(--border);}
+  table{border-collapse:collapse;width:100%;font-size:0.86rem;background:var(--bg-panel);}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;}
+  th{background:var(--table-head);font-weight:600;color:var(--text);white-space:nowrap;}
+  tr:nth-child(even) td{background:var(--table-alt);}
+  tr:last-child td{border-bottom:none;}
+
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0;}
+  .card{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+    box-shadow:var(--shadow);
+  }
+  .card .card-title{font-weight:700;color:var(--accent-strong);font-size:0.92rem;margin-bottom:4px;}
+  .card .card-body{font-size:0.83rem;color:var(--text-dim);}
+
+  .flow{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:18px 20px;
+    margin:16px 0;
+    font-size:0.86rem;
+  }
+  .flow-step{
+    display:flex;
+    gap:12px;
+    padding:10px 0;
+    border-bottom:1px dashed var(--border);
+    align-items:flex-start;
+  }
+  .flow-step:last-child{border-bottom:none;}
+  .flow-step .num{
+    flex-shrink:0;
+    width:24px;height:24px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#fff;
+    font-size:0.75rem;
+    font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .flow-step .label{font-weight:600;}
+  .flow-step .desc{color:var(--text-dim);font-size:0.82rem;margin-top:2px;}
+
+  .badge{
+    display:inline-block;
+    font-size:0.7rem;
+    font-weight:700;
+    padding:1px 8px;
+    border-radius:999px;
+    margin-right:6px;
+  }
+  .badge.good{background:#dff0d8;color:#3c7a2e;}
+  .badge.mid{background:#fdf0d5;color:#9a6b12;}
+  .badge.low{background:#f6d8d3;color:#a3402f;}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .badge.good{background:#1f3a20;color:#8fd18a;}
+    :root:not([data-theme="light"]) .badge.mid{background:#3e300f;color:#e0b95c;}
+    :root:not([data-theme="light"]) .badge.low{background:#3d2320;color:#e19488;}
+  }
+  :root[data-theme="dark"] .badge.good{background:#1f3a20;color:#8fd18a;}
+  :root[data-theme="dark"] .badge.mid{background:#3e300f;color:#e0b95c;}
+  :root[data-theme="dark"] .badge.low{background:#3d2320;color:#e19488;}
+  .badge.todo{background:var(--table-head);color:var(--text-dim);}
+
+  /* Progress widget */
+  .progress-card{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px 22px;
+    margin:18px 0 24px 0;
+    box-shadow:var(--shadow);
+  }
+  .progress-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .progress-head .ptitle{font-weight:700;font-size:0.95rem;}
+  .progress-head .pmeta{font-size:0.78rem;color:var(--text-dim);}
+  .progress-total{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin:12px 0 16px 0;
+  }
+  .progress-total .pct{
+    font-size:2.1rem;
+    font-weight:800;
+    color:var(--accent-strong);
+    font-variant-numeric:tabular-nums;
+    line-height:1;
+    flex-shrink:0;
+    min-width:82px;
+  }
+  .progress-total .track{
+    flex:1;
+    height:12px;
+    border-radius:999px;
+    background:var(--table-head);
+    overflow:hidden;
+    position:relative;
+  }
+  .progress-total .fill{
+    height:100%;
+    border-radius:999px;
+    background:linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);
+  }
+  .progress-def{
+    font-size:0.78rem;
+    color:var(--text-dim);
+    border-top:1px dashed var(--border);
+    padding-top:10px;
+    margin-top:2px;
+  }
+  .phase-list{margin-top:14px;}
+  .phase-row{
+    display:grid;
+    grid-template-columns:1fr auto 120px 68px;
+    align-items:center;
+    gap:14px;
+    padding:9px 0;
+    border-bottom:1px solid var(--border);
+    font-size:0.85rem;
+  }
+  .phase-row:last-child{border-bottom:none;}
+  .phase-row .pname{font-weight:500;}
+  .phase-row .pweight{font-size:0.72rem;color:var(--text-dim);white-space:nowrap;}
+  .phase-row .ptrack{
+    height:8px;
+    border-radius:999px;
+    background:var(--table-head);
+    overflow:hidden;
+  }
+  .phase-row .ptrack .pfill{height:100%;border-radius:999px;background:var(--accent);}
+  .phase-row .pfill.done{background:#3c7a2e;}
+  :root[data-theme="dark"] .phase-row .pfill.done{background:#5fae57;}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .phase-row .pfill.done{background:#5fae57;}}
+  .phase-row .pval{text-align:right;font-variant-numeric:tabular-nums;color:var(--text-dim);}
+  @media (max-width:600px){
+    .phase-row{grid-template-columns:1fr auto;grid-template-areas:"name val" "bar bar";row-gap:6px;}
+    .phase-row .pname{grid-area:name;}
+    .phase-row .pval{grid-area:val;}
+    .phase-row .ptrack{grid-area:bar;}
+    .phase-row .pweight{display:none;}
+  }
+
+  .footer-nav{
+    display:flex;
+    justify-content:space-between;
+    margin-top:48px;
+    padding-top:16px;
+    border-top:1px solid var(--border);
+  }
+  .footer-nav button{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:9px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:0.85rem;
+    font-family:inherit;
+  }
+  .footer-nav button:hover{border-color:var(--accent);color:var(--accent-strong);}
+
+  @media (max-width:760px){
+    body{flex-direction:column;}
+    nav.sidebar{width:100%;height:auto;position:relative;border-right:none;border-bottom:1px solid var(--border);}
+    main{padding:24px 18px 80px 18px;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="brand">
+    <div class="name">InvoSnap 進貨快照</div>
+    <div class="sub">供應商紙本進貨單 → POS建檔自動化</div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;height:6px;border-radius:999px;background:var(--table-head);overflow:hidden;">
+        <div style="height:100%;width:25%;border-radius:999px;background:linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);"></div>
+      </div>
+      <span style="font-size:0.72rem;color:var(--text-dim);font-weight:700;white-space:nowrap;">25% 完成</span>
+    </div>
+  </div>
+  <ul class="navlist" id="navlist">
+    <li><button data-page="p0" class="active"><span class="idx">00</span><span>總覽</span></button></li>
+    <li><button data-page="p1"><span class="idx">01</span><span>專案範疇與痛點</span></button></li>
+    <li><button data-page="p2"><span class="idx">02</span><span>影像辨識技術調查</span></button></li>
+    <li><button data-page="p5"><span class="idx">03</span><span>成本試算 / 開源 / 台灣市場</span></button></li>
+    <li><button data-page="p3"><span class="idx">04</span><span>系統架構提案</span></button></li>
+    <li><button data-page="p4"><span class="idx">05</span><span>路線圖與待確認事項</span></button></li>
+    <li><button data-page="p6"><span class="idx">06</span><span>Vision Prompt / 驗證腳本</span></button></li>
+  </ul>
+</nav>
+
+<main>
+
+<!-- P0 總覽 -->
+<section class="page active" id="p0">
+  <h1>InvoSnap 進貨快照 <span class="tag">專案文件總覽</span></h1>
+  <p class="page-desc">川辣香麻辣烫/滷味連鎖店－門市供應商紙本進貨單 → POS 進出貨資料自動化建檔工具</p>
+
+  <h2>這是什麼</h2>
+  <p>店長每天要處理最多 <strong>5 家供應商</strong>、每家約 <strong>3 張 A4 紙本進貨單</strong>（品項、單價、重量/數量，各家單位不一）。現況是手動把這些資料一筆一筆 key 進 POS 系統，費時又容易出錯，且總部 POS 暫無資源開發此功能。</p>
+  <p>InvoSnap 是一個獨立於總部 POS 之外的輔助小工具：<strong>手機拍照 → 影像辨識抽取結構化資料 → 依供應商對照表換算成店內統一單位/格式 → 產出可匯入（或未來可API串接）POS的進出貨資料</strong>。</p>
+
+  <div class="flow">
+    <div class="flow-step"><div class="num">1</div><div><div class="label">店長手機拍照</div><div class="desc">每家供應商送貨單，A4規格、格式各家不同</div></div></div>
+    <div class="flow-step"><div class="num">2</div><div><div class="label">影像辨識 → 結構化 JSON</div><div class="desc">品項 / 單價 / 數量 / 原始單位</div></div></div>
+    <div class="flow-step"><div class="num">3</div><div><div class="label">套用供應商單位換算對照表</div><div class="desc">台斤/公斤/箱 → 店內統一單位（規則式計算，非AI猜測）</div></div></div>
+    <div class="flow-step"><div class="num">4</div><div><div class="label">店長覆核 / 修正</div><div class="desc">辨識結果先預填，人工一鍵確認再入帳</div></div></div>
+    <div class="flow-step"><div class="num">5</div><div><div class="label">寫入資料庫 → 匯出給POS</div><div class="desc">CSV/Excel 匯入，或未來API串接</div></div></div>
+  </div>
+
+  <div class="callout conclusion">
+    由於單日總量小（約15張/天）、供應商單據格式不一且沒有大量標註資料可訓練模型，<strong>建議 MVP 直接採用多模態 LLM Vision API（如 Claude API）做「拍照→結構化JSON」的辨識</strong>，而不是自建傳統 OCR + 版面辨識模型。成本每天不到 1 美元，開發速度最快，且對「每家格式都不同」這種小樣本場景最魯棒。之後若店家/量體擴大到多分店、高單量，再考慮導入 PaddleOCR 自架或雲端 Document AI 做客製化樣板以降低長期成本。
+  </div>
+
+  <h2>專案完成度</h2>
+  <div class="progress-card">
+    <div class="progress-head">
+      <div class="ptitle">整體完成度</div>
+      <div class="pmeta">最後更新：2026-08-31</div>
+    </div>
+    <div class="progress-total">
+      <div class="pct" id="overallPct">25%</div>
+      <div class="track"><div class="fill" id="overallFill" style="width:25%"></div></div>
+    </div>
+    <div class="progress-def">100% 的定義：整個工具（拍照上傳、辨識、供應商對照/單位換算、覆核確認、匯出）完成開發與實測，可以正式提交給川辣香店長與門市人員上線使用。目前僅完成「需求釐清＋技術調查與選型」，尚未開始寫程式。</div>
+
+    <div class="phase-list" id="phaseList">
+      <div class="phase-row">
+        <div class="pname">需求釐清與範疇定義</div>
+        <div class="pweight">權重 10%</div>
+        <div class="ptrack"><div class="pfill done" style="width:100%"></div></div>
+        <div class="pval"><span class="badge good">100%</span></div>
+      </div>
+      <div class="phase-row">
+        <div class="pname">技術調查與方案選型</div>
+        <div class="pweight">權重 15%</div>
+        <div class="ptrack"><div class="pfill done" style="width:100%"></div></div>
+        <div class="pval"><span class="badge good">100%</span></div>
+      </div>
+      <div class="phase-row">
+        <div class="pname">待確認事項對齊（與店長確認POS匯入方式、供應商單據範例等）</div>
+        <div class="pweight">權重 10%</div>
+        <div class="ptrack"><div class="pfill" style="width:0%"></div></div>
+        <div class="pval"><span class="badge todo">0%</span></div>
+      </div>
+      <div class="phase-row">
+        <div class="pname">前端開發（拍照上傳／覆核UI，Vue）</div>
+        <div class="pweight">權重 15%</div>
+        <div class="ptrack"><div class="pfill" style="width:0%"></div></div>
+        <div class="pval"><span class="badge todo">0%</span></div>
+      </div>
+      <div class="phase-row">
+        <div class="pname">後端開發（API／辨識串接／資料庫，Node.js）</div>
+        <div class="pweight">權重 20%</div>
+        <div class="ptrack"><div class="pfill" style="width:0%"></div></div>
+        <div class="pval"><span class="badge todo">0%</span></div>
+      </div>
+      <div class="phase-row">
+        <div class="pname">供應商對照表與單位換算邏輯</div>
+        <div class="pweight">權重 10%</div>
+        <div class="ptrack"><div class="pfill" style="width:0%"></div></div>
+        <div class="pval"><span class="badge todo">0%</span></div>
+      </div>
+      <div class="phase-row">
+        <div class="pname">實測驗證（真實單據小規模測試）</div>
+        <div class="pweight">權重 10%</div>
+        <div class="ptrack"><div class="pfill" style="width:0%"></div></div>
+        <div class="pval"><span class="badge todo">0%</span></div>
+      </div>
+      <div class="phase-row">
+        <div class="pname">店內試營運與正式交付</div>
+        <div class="pweight">權重 10%</div>
+        <div class="ptrack"><div class="pfill" style="width:0%"></div></div>
+        <div class="pval"><span class="badge todo">0%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>技術棧</h2>
+  <div class="card-grid">
+    <div class="card"><div class="card-title">前端</div><div class="card-body">Vue 3 + Vite，拍照上傳與覆核UI</div></div>
+    <div class="card"><div class="card-title">後端</div><div class="card-body">Node.js + Express，處理上傳/辨識代呼叫/對照表/匯出</div></div>
+    <div class="card"><div class="card-title">辨識</div><div class="card-body">LLM Vision API（Claude 等），MVP階段建議方案</div></div>
+    <div class="card"><div class="card-title">資料庫</div><div class="card-body">SQLite（單店起步）→ 未來可轉 PostgreSQL</div></div>
+  </div>
+
+  <h2>文件索引</h2>
+  <ul>
+    <li>01 — 專案範疇與痛點：問題定義、使用者、目標、非目標、風險</li>
+    <li>02 — 影像辨識技術調查：OCR / Document AI / LLM Vision 方案比較與建議</li>
+    <li>03 — 成本試算、開源方案與台灣市場：實際費用估算、GitHub開源專案、台灣POS廠商現況</li>
+    <li>04 — 系統架構提案：Node.js + Vue 技術棧、資料模型、流程設計</li>
+    <li>05 — MVP 路線圖與待確認事項</li>
+    <li>06 — 台灣送貨單格式模擬 + Vision Prompt/Schema 設計、驗證腳本骨架</li>
+  </ul>
+</section>
+
+<!-- P1 專案範疇 -->
+<section class="page" id="p1">
+  <h1>01 · 專案範疇與痛點</h1>
+  <p class="page-desc">問題定義、使用者、目標、非目標、風險</p>
+
+  <h2>背景</h2>
+  <ul>
+    <li>使用者是川辣香（麻辣烫/滷味連鎖）某台灣分店的店長。</li>
+    <li>總部POS系統功能有限，且總部目前沒有資源為單一分店客製開發新功能。</li>
+    <li>店長希望先有一個「店內自建的輔助工具」，不依賴總部排期。</li>
+  </ul>
+
+  <h2>現況痛點</h2>
+  <p>每天最多約 <strong>5 家供應商</strong>送原料，每家供應商一天約開出 <strong>3 張紙本進貨單</strong>（尖峰情境下單日最多約15張紙本單據）。</p>
+  <p>單據格式：類似A4大小、每家供應商「自己固定」的版式（非全店統一格式），內容包含：</p>
+  <ul>
+    <li>供應商/廠商別</li>
+    <li>品項名稱（如：青江菜、小白菜…）</li>
+    <li>單價</li>
+    <li>數量／重量（單位依供應商不同：台斤、公斤…）</li>
+  </ul>
+  <p>目前作法：店長手動把紙本資料一筆筆輸入POS，耗時、易誤植（尤其單位換算容易出錯）。目標是把這些單據轉換成「店內系統統一單位、統一格式」的進出貨資料，最終寫入（或匯入）POS。</p>
+
+  <h2>使用者與角色</h2>
+  <div class="table-wrap"><table>
+    <tr><th>角色</th><th>說明</th></tr>
+    <tr><td>店長（主要使用者）</td><td>每日收貨時用手機拍照上傳單據、覆核辨識結果、確認入帳</td></tr>
+    <tr><td>（未來）加盟業主/總部</td><td>若擴散到其他分店，可能需要多店/多帳號管理</td></tr>
+    <tr><td>供應商</td><td>被動角色，不使用系統，只是單據格式的來源（每家格式可能不同、也可能不時微調）</td></tr>
+  </table></div>
+
+  <h2>目標（Goals）</h2>
+  <ol>
+    <li>用手機拍照取代手動輸入，減少每日鍵入紙本資料的時間。</li>
+    <li>自動辨識供應商別、品項、單價、數量/重量，並依供應商對照表換算為店內統一單位。</li>
+    <li>產出可匯入POS（或未來可API串接）的進出貨資料。</li>
+    <li>保留「人工覆核/修正」步驟，辨識結果不強制自動入帳，降低誤判風險（尤其金額類資料）。</li>
+  </ol>
+
+  <h2>非目標（Non-goals，先不做）</h2>
+  <ul>
+    <li>不重做/取代總部POS系統本身。</li>
+    <li>不假設一開始就有POS API可寫入——先以「產出標準化資料（CSV/Excel/資料庫）」為主，POS串接視總部配合度而定。</li>
+    <li>不處理付款、對帳、財務報表等延伸功能（MVP範圍外）。</li>
+    <li>不支援供應商自行登入系統（單據來源仍是紙本）。</li>
+  </ul>
+
+  <h2>成功指標（暫定，待與店長確認）</h2>
+  <ul>
+    <li>每日建檔時間從「手動輸入」大幅縮短（例如目標：每張單據辨識+覆核 &lt; 1 分鐘）。</li>
+    <li>品項/單價/數量辨識正確率達到「覆核微調即可」的水準（不需要整筆重打）。</li>
+    <li>供應商單位換算 100% 依對照表正確換算（這塊不能靠OCR猜，需明確規則表）。</li>
+  </ul>
+
+  <h2>已知風險</h2>
+  <ul>
+    <li>供應商單據格式不統一，且可能會變動（缺乏「一張範本走天下」的假設基礎）。</li>
+    <li>手機拍照品質不穩定（光線、歪斜、皺褶紙張），影響辨識率。</li>
+    <li>單位換算是「業務規則」而非影像辨識能解決的問題，容易被忽略但其實是專案的核心正確性風險。</li>
+    <li>若最終要寫回POS，需視POS是否有可用的匯入/API管道，這點目前未知（待確認）。</li>
+  </ul>
+
+  <div class="footer-nav">
+    <button data-page="p0">← 總覽</button>
+    <button data-page="p2">下一篇：影像辨識技術調查 →</button>
+  </div>
+</section>
+
+<!-- P2 影像辨識技術調查 -->
+<section class="page" id="p2">
+  <h1>02 · 影像辨識技術調查</h1>
+  <p class="page-desc">拍照單據 → 結構化資料，這是整個專案技術難度最高的部分</p>
+
+  <h2>方案分類</h2>
+
+  <h3>A. 傳統開源 OCR + 版面/表格辨識（自架、免費）</h3>
+  <ul>
+    <li><strong>Tesseract 5.x / Tesseract.js</strong>：最成熟、社群最大的開源OCR引擎。安裝體積小（約10MB）、單頁辨識速度快（&lt;1秒）、可在Node.js中透過 Tesseract.js 直接跑。但本身只做「文字辨識」，不含表格/版面結構化，中文準確率普通，需自己寫規則切欄位。</li>
+    <li><strong>PaddleOCR（含 PP-StructureV3）</strong>：百度開源，針對中文/亞洲語系優化，內建 layout analysis 與表格結構辨識。缺點：主要是Python生態，體積較大，Node.js專案通常得包成獨立Python微服務。</li>
+    <li><strong>RapidOCR</strong>：輕量化、模仿PaddleOCR效果但依賴更小，適合資源有限的環境。</li>
+    <li><strong>Surya</strong>：對版面/多欄位文件辨識較強，但相對新、生態較小。</li>
+  </ul>
+  <p><strong>共同問題</strong>：這類方案辨識出來的是「文字＋位置」，仍需自己寫「版面解析規則」對應到「這一格是品項、那一格是單價」。5家供應商格式都不同，等於要為每家寫一套規則，格式微調就可能失效。屬於「開發/維護成本較高，但長期單張成本趨近於0」的路線。</p>
+
+  <h3>B. 雲端 Document AI／表格辨識服務（付費）</h3>
+  <ul>
+    <li><strong>Google Cloud Document AI</strong>：有Form Parser／Invoice Parser等預建處理器，也支援自訓練Custom Extractor。定價約每千頁US$1.5–30。</li>
+    <li><strong>Azure AI Document Intelligence</strong>：預建Invoice/Receipt模型，也支援自訓練Custom Model；預建模型定價約每千頁US$10，自訓練後長期常比Google划算。</li>
+    <li><strong>AWS Textract</strong>：AnalyzeExpense、表格擷取等功能，依功能不同每千頁約US$1.5–65。</li>
+  </ul>
+  <p>對「標準發票/收據」效果好，但對「每家供應商自訂、非標準格式」的送貨單，通常仍需個別建立/訓練Custom Model，前期需蒐集每家供應商多張範例單據，導入門檻與工作量都不低。</p>
+
+  <h3>C. 多模態 LLM Vision（拍照直接丟給大型視覺語言模型）</h3>
+  <p>代表：Claude（Anthropic）、GPT-4o/GPT-5（OpenAI）、Gemini 2.5 Pro/Flash（Google）等，直接傳圖片＋prompt，模型直接回傳JSON，完全跳過傳統OCR pipeline。</p>
+  <ul>
+    <li>2026年行情：處理一頁單據約US$0.01–0.03，不需事先為每家供應商建樣板/訓練資料。</li>
+    <li>Gemini 2.5 Pro 在掃描/畫質較差文件上表現最好（約94%），Gemini Flash 2.0 適合高量重成本效益，GPT-4o適合需額外推理的複雜文件，Claude系列適合對幻覺風險容忍度低、需穩定輸出格式的流程。</li>
+    <li>Node.js生態已有現成模式：開源專案 zerox 把「丟圖給視覺模型、拿回結構化文字」包成一個函式呼叫。</li>
+  </ul>
+  <p>不需訓練資料、不需為每家供應商寫死解析規則，格式變動也大多能自己適應（模型是「理解」而非「比對固定座標」），非常適合本案「格式不統一、單量不大」的情境。</p>
+
+  <h2>三種路線比較表</h2>
+  <div class="table-wrap"><table>
+    <tr><th>面向</th><th>A. 傳統開源OCR自架</th><th>B. 雲端Document AI</th><th>C. LLM Vision API</th></tr>
+    <tr><td>前期開發成本</td><td><span class="badge low">高</span>每家寫規則</td><td><span class="badge mid">中～高</span>要訓練</td><td><span class="badge good">低</span>設計schema即可</td></tr>
+    <tr><td>對格式不同/會變的適應力</td><td><span class="badge low">差</span></td><td><span class="badge mid">中</span>格式變要重訓</td><td><span class="badge good">好</span>模型用理解而非比對</td></tr>
+    <tr><td>中文/表格辨識準確度</td><td>中（PaddleOCR較好）</td><td>高（需訓練）</td><td>高，隨模型版本進步</td></tr>
+    <tr><td>單張使用成本</td><td>幾乎0（本地運算）</td><td>約US$0.01–0.065/頁</td><td>約US$0.01–0.03/頁</td></tr>
+    <tr><td>是否需要網路連線</td><td>可離線</td><td>需要</td><td>需要</td></tr>
+    <tr><td>是否需另建服務</td><td>需要（Python微服務）</td><td>不需要（純API）</td><td>不需要（純API）</td></tr>
+    <tr><td>適合階段</td><td>量體變大想壓低長期成本時</td><td>格式穩定、量夠大、想自訓練時</td><td><strong>MVP 階段最適合</strong></td></tr>
+  </table></div>
+
+  <h2>建議</h2>
+  <div class="callout conclusion">
+    MVP 階段採用方案 C（LLM Vision API，例如 Claude API 的 vision 功能）。理由：本案單量小，API成本可忽略；5家供應商格式互異且可能變動，傳統OCR/自訓練模型的規則維護成本遠高於直接用LLM理解單據版面；開發時程最短，符合「總部沒資源、店長想先有可用工具」的實際需求；Node.js/Vue技術棧下，串接LLM Vision API只是一支REST呼叫，架構單純。
+  </div>
+  <p>長期／量體擴大後：若擴散到多分店、單量大幅提升，可評估改用雲端Document AI自訓練Custom Model或PaddleOCR自架以降低長期單價成本，但這屬於後續優化。不論哪個階段，「單位換算表」都必須是明確維護的業務規則資料，不能期待任何辨識模型自己猜對。</p>
+
+  <h2>參考來源</h2>
+  <ul>
+    <li><a href="https://www.ultralytics.com/blog/popular-open-source-ocr-models-and-how-they-work" target="_blank">Open-Source OCR Models: Tesseract, EasyOCR & More</a></li>
+    <li><a href="https://ironsoftware.com/csharp/ocr/blog/compare-to-other-components/paddle-ocr-vs-tesseract/" target="_blank">Paddle OCR vs Tesseract: In-Depth OCR Comparison</a></li>
+    <li><a href="https://invoicedataextraction.com/blog/python-ocr-library-comparison-invoices" target="_blank">Best Python OCR Library for Invoices: 6 Engines Compared (2026)</a></li>
+    <li><a href="https://imagetotable.ai/blog/best-open-source-ocr-tools-2026" target="_blank">Best Open Source OCR Tools 2026</a></li>
+    <li><a href="https://invoicedataextraction.com/blog/open-source-ocr-invoice-extraction" target="_blank">Open Source OCR for Invoice Extraction: Developer Comparison</a></li>
+    <li><a href="https://invoicedataextraction.com/blog/vision-llm-invoice-extraction-nodejs" target="_blank">Vision LLM Invoice Extraction with Node.js</a></li>
+    <li><a href="https://www.aimagicx.com/blog/llm-api-pricing-comparison-2026" target="_blank">LLM API Pricing in 2026: The Complete Cost Comparison</a></li>
+    <li><a href="https://www.invofox.com/en/blog/document-parsing-using-gpt-4o-api-vs-claude-sonnet-3-5-api-vs-invofox-api-with-code-samples/" target="_blank">Document Parsing: GPT-5 vs Claude vs Gemini vs Invofox (2026)</a></li>
+    <li><a href="https://parsli.co/blog/llm-ocr-vs-traditional-ocr" target="_blank">LLM OCR vs Traditional OCR: 2026 Benchmark</a></li>
+    <li><a href="https://invoicedataextraction.com/blog/extract-invoice-data-javascript-nodejs" target="_blank">Extract Invoice Data with JavaScript and Node.js</a></li>
+    <li><a href="https://invoicedataextraction.com/blog/aws-textract-vs-google-document-ai-vs-azure-document-intelligence" target="_blank">AWS Textract vs Google Document AI vs Azure Document Intelligence (2026)</a></li>
+    <li><a href="https://triotechsystems.com/ai-engineering-guides-compare-textract-vs-document-intelligence-vs-document-ai/" target="_blank">Textract vs Azure Document Intelligence vs Document AI 2026</a></li>
+  </ul>
+
+  <div class="footer-nav">
+    <button data-page="p1">← 專案範疇與痛點</button>
+    <button data-page="p5">下一篇：成本試算 / 開源 / 台灣市場 →</button>
+  </div>
+</section>
+
+<!-- P5 (order 03) 成本+開源+台灣市場 -->
+<section class="page" id="p5">
+  <h1>03 · 成本試算、開源方案與台灣市場參考</h1>
+  <p class="page-desc">實際要花多少錢？有沒有現成的開源/商業方案可以直接參考、甚至不用自己做？</p>
+
+  <h2>一、成本試算（以本案單量：約15張/天、450張/月 估算）</h2>
+  <div class="table-wrap"><table>
+    <tr><th>方案</th><th>單頁成本</th><th>月成本估算（450張）</th><th>一次性成本</th><th>備註</th></tr>
+    <tr><td><strong>LLM Vision — Claude（建議）</strong></td><td>約US$0.01～0.015/張</td><td>約US$4.5～7</td><td><span class="badge good">幾乎無</span></td><td>依token計費：圖片約1,000~1,600 tokens + 少量prompt</td></tr>
+    <tr><td>LLM Vision — GPT-4o</td><td>約US$0.01～0.03/張</td><td>約US$4.5～13.5</td><td><span class="badge good">無</span></td><td>適合需較強推理判斷模糊欄位時</td></tr>
+    <tr><td>LLM Vision — Gemini Flash</td><td>約US$0.001～0.005/張</td><td>約US$0.5～2.3</td><td><span class="badge good">無</span></td><td>高量、重成本效益時的替代選項</td></tr>
+    <tr><td>雲端 Document AI（預建模型）</td><td>約US$0.0015～0.03/張</td><td>約US$0.7～13.5</td><td><span class="badge mid">低</span></td><td>對非標準格式單據效果通常不如客製模型</td></tr>
+    <tr><td>雲端 Document AI（Custom Model，5家各一套）</td><td>同上API費</td><td>同上</td><td><span class="badge low">中～高</span></td><td>每家蒐集10~50張範例標註訓練，格式一變就要重訓</td></tr>
+    <tr><td>開源自架 PaddleOCR/Tesseract+自寫規則</td><td>US$0（僅算力）</td><td>主機成本約US$0~5</td><td><span class="badge low">高</span></td><td>工程師需為每家寫版面解析規則、除錯</td></tr>
+  </table></div>
+
+  <div class="callout">
+    以「15張/天」這種小單量而言，任何方案的 <strong>API費用本身都不是重點</strong>（每月頂多十幾美元），真正決定成本的是<strong>前期開發/維運人力</strong>。這也是為什麼建議MVP直接用LLM Vision API——省下的是「為5家供應商各寫一套規則/各訓練一個模型」的工程時間，而不是省API費用本身。
+  </div>
+  <p style="font-size:0.82rem;color:var(--text-dim)">註：以上為2026年8月公開資料的粗估區間，實際費率請在導入前以官方最新定價頁面為準。</p>
+
+  <h2>二、開源 GitHub 專案參考</h2>
+
+  <h3>A. 可直接拿來用/參考架構的「文件理解」模型</h3>
+  <div class="table-wrap"><table>
+    <tr><th>專案</th><th>說明</th><th>適用性</th></tr>
+    <tr><td><a href="https://github.com/clovaai/donut" target="_blank">clovaai/donut</a></td><td>OCR-free文件理解Transformer，圖片直接輸出結構化JSON，ECCV 2022官方實作</td><td>概念上與LLM Vision思路相同，但需自己微調(fine-tune)，適合未來想「完全離線」時參考</td></tr>
+    <tr><td><a href="https://github.com/philschmid/document-ai-transformers" target="_blank">philschmid/document-ai-transformers</a></td><td>Hugging Face生態下LayoutLM/Donut等文件AI模型微調範例</td><td>學習用自己單據資料微調模型的參考教材</td></tr>
+    <tr><td>Table Transformer (TATR，微軟)</td><td>基於Transformer的表格偵測與結構重建，搭配PubTables-1M資料集</td><td>想強化表格框線抓取精準度可參考，屬研究型專案</td></tr>
+    <tr><td><a href="https://github.com/fahmiaziz98/receipt_parsing" target="_blank">fahmiaziz98/receipt_parsing</a></td><td>用Donut模型做收據解析的實作範例</td><td>小型範例，可看架構思路，不建議直接商用</td></tr>
+  </table></div>
+
+  <h3>B. 可直接整合進 Node.js/Python pipeline 的實用工具庫</h3>
+  <div class="table-wrap"><table>
+    <tr><th>專案</th><th>說明</th></tr>
+    <tr><td><a href="https://github.com/naptha/tesseract.js" target="_blank">Tesseract.js</a></td><td>純JS/Node可直接跑的Tesseract封裝，不依賴Python服務即可跑OCR，但中文表格辨識能力有限</td></tr>
+    <tr><td>PaddleOCR（百度官方GitHub）</td><td>中文/表格辨識能力較強，Python生態，需包成獨立微服務讓Node呼叫</td></tr>
+    <tr><td><a href="https://github.com/xavctn/img2table" target="_blank">img2table</a>（Python）</td><td>專做「表格框線偵測＋內容擷取」，可搭配Tesseract/PaddleOCR當文字引擎，能直接輸出成Excel、保留原始表格結構，是規則式表格抓取中很成熟的庫</td></tr>
+    <tr><td><a href="https://github.com/getomni-ai/zerox" target="_blank">zerox</a>（Node.js/TypeScript）</td><td>把「丟圖給視覺語言模型、拿回結構化文字」包成一個函式呼叫，與本案MVP方向一致，可直接參考其prompt設計，甚至當雛型起點</td></tr>
+  </table></div>
+
+  <h3>C. 資料集（若未來要自己訓練/微調模型時參考）</h3>
+  <ul>
+    <li><strong>SROIE</strong>：1000張掃描收據資料集，含OCR標註，收據辨識研究常用基準。</li>
+    <li><strong>CORD</strong>：常搭配Donut/LayoutLM使用的收據資料集。</li>
+  </ul>
+  <p>這些是英文/其他語系收據為主的公開資料集，不含台灣供應商的中文送貨單格式，若走「自訓練模型」路線，最終仍需自己蒐集、標註店長實際收到的單據，公開資料集只能當起步練習用。</p>
+
+  <h2>三、台灣本地 POS／零售科技廠商概況</h2>
+  <p>調查目的：與其自己做，是否已有台灣廠商做過「拍照建檔進貨單」這類功能，可以直接採購或串接，省去自建的必要。</p>
+  <div class="table-wrap"><table>
+    <tr><th>廠商/服務</th><th>相關性</th><th>說明</th></tr>
+    <tr><td><strong>瑞乘科技（RIX，代理銀豹POSPAL）</strong></td><td><span class="badge mid">中</span></td><td>零售/餐飲收銀系統，提供AI影像辨識、自動報貨、供應鏈採購等功能，但公開資料偏向「商品條碼/影像辨識結帳」，未明確看到「供應商紙本進貨單拍照建檔」功能，需直接洽詢確認</td></tr>
+    <tr><td><strong>力新國際 NewSoft</strong></td><td><span class="badge mid">中</span></td><td>主力是企業「報支單據（收據/發票）OCR辨識」，技術路線與本案類似，但服務對象是一般企業報帳，非餐飲進貨場景，可作為「此技術在台灣已商業化」的佐證</td></tr>
+    <tr><td>群豐資訊</td><td><span class="badge low">低～中</span></td><td>餐飲營運管理POS，含採購決策、庫存管理，公開資訊未特別提及拍照辨識送貨單功能</td></tr>
+    <tr><td>王品、瓦城等大型餐飲集團</td><td>參考</td><td>已導入進銷存/成本管理系統，顯示原料進貨數位化在台灣餐飲業有前例，但多為大型集團自建/客製系統，非中小型連鎖可直接取用</td></tr>
+  </table></div>
+
+  <div class="callout conclusion">
+    目前查到的台灣POS/餐飲科技廠商，多半把「AI影像辨識」用在<strong>結帳端</strong>（商品辨識、自助結帳），尚未查到有明確公開資料證實「專門做供應商紙本送貨單拍照轉結構化進貨資料」這個利基功能的現成台灣產品。這代表：這確實是一個總部POS目前沒做、坊間也沒有明顯現成替代品的功能缺口；但強烈建議在動工前，直接洽詢前述廠商（尤其瑞乘科技、力新國際），確認是否有非公開揭露的模組或客製服務可以直接採購——如果有，可能比自建更划算；如果沒有，也能更確認市場缺口。
+  </div>
+
+  <div class="footer-nav">
+    <button data-page="p2">← 影像辨識技術調查</button>
+    <button data-page="p3">下一篇：系統架構提案 →</button>
+  </div>
+</section>
+
+<!-- P3 系統架構提案 -->
+<section class="page" id="p3">
+  <h1>04 · 系統架構提案（Node.js + Vue）</h1>
+  <p class="page-desc">依技術人員指定的偏好，前端採 Vue、後端採 Node.js</p>
+
+  <h2>整體流程</h2>
+  <div class="flow">
+    <div class="flow-step"><div class="num">1</div><div><div class="label">Vue 前端 — 拍照/上傳頁</div><div class="desc">上傳圖片 (multipart/form-data)</div></div></div>
+    <div class="flow-step"><div class="num">2</div><div><div class="label">Node.js 後端 API</div><div class="desc">圖片預處理（裁切/壓縮/旋轉校正，可選）→ 呼叫 LLM Vision API（帶入固定JSON schema prompt）</div></div></div>
+    <div class="flow-step"><div class="num">3</div><div><div class="label">LLM 回傳結構化 JSON</div><div class="desc">廠商猜測、品項陣列：[{品名, 單價, 數量, 原始單位}, ...]</div></div></div>
+    <div class="flow-step"><div class="num">4</div><div><div class="label">後端套用「供應商對照表」</div><div class="desc">依供應商查詢單位換算規則，品名比對到店內標準品項代碼，換算成店內統一單位與價格</div></div></div>
+    <div class="flow-step"><div class="num">5</div><div><div class="label">Vue 前端 — 覆核/修正頁</div><div class="desc">店長看到辨識結果表格，逐列確認/修改；標記新供應商/新品項時可即時建檔對照規則</div></div></div>
+    <div class="flow-step"><div class="num">6</div><div><div class="label">店長按下「確認入帳」</div><div class="desc">Node.js後端寫入本地資料庫</div></div></div>
+    <div class="flow-step"><div class="num">7</div><div><div class="label">匯出 CSV/Excel 給POS匯入</div><div class="desc">或未來：呼叫POS API寫入</div></div></div>
+  </div>
+
+  <div class="callout">
+    辨識再準也會有錯（尤其單價、數量），因此設計上不做「自動直接入帳」，而是「辨識→預填→人工一鍵確認」，把AI當作「幫你把資料打好草稿」而非「幫你做決定」。即使辨識偶爾出錯，店長覆核一眼也能抓到，不會直接污染進出貨帳目。
+  </div>
+
+  <h2>技術棧建議</h2>
+  <div class="table-wrap"><table>
+    <tr><th>層</th><th>技術</th><th>說明</th></tr>
+    <tr><td>前端</td><td>Vue 3 + Vite</td><td>拍照上傳、覆核表單UI</td></tr>
+    <tr><td>前端（相機）</td><td><code>&lt;input capture="environment"&gt;</code> 或 PWA</td><td>先用純網頁+相機權限即可，不必一開始就做原生App；後續需要更好體驗再評估 Capacitor</td></tr>
+    <tr><td>後端</td><td>Node.js + Express（或Fastify）</td><td>上傳、辨識代呼叫、對照表CRUD、匯出等API</td></tr>
+    <tr><td>影像辨識</td><td>Claude API（vision，結構化輸出）</td><td>MVP階段建議方案</td></tr>
+    <tr><td>資料庫</td><td>SQLite（單店/MVP）→ 未來PostgreSQL</td><td>單店資料量小，SQLite足夠且部署簡單</td></tr>
+    <tr><td>檔案儲存</td><td>本機檔案系統 或 S3-compatible</td><td>存原始單據照片，供日後追溯/覆核用</td></tr>
+    <tr><td>匯出</td><td>CSV / Excel（如<code>exceljs</code>）</td><td>對接POS匯入功能（若POS支援）</td></tr>
+  </table></div>
+
+  <h2>資料模型（初版）</h2>
+  <pre><code>Vendor（供應商）
+  - id
+  - name（廠商名稱）
+  - default_unit（該廠商慣用單位，如：台斤/公斤/箱，僅作預設值）
+  - notes
+
+VendorItemMapping（供應商品項對照/單位換算表）★核心業務規則表，非AI猜測
+  - id
+  - vendor_id
+  - vendor_item_name（供應商單據上寫的品名，各廠商叫法可能不同）
+  - store_item_id → StoreItem
+  - unit_conversion_rate（供應商單位 → 店內標準單位換算率，例：1台斤 = 0.6公斤）
+  - vendor_unit（來源單位）
+  - store_unit（目標/店內標準單位）
+
+StoreItem（店內標準品項主檔）
+  - id
+  - name（店內統一叫法，如：青江菜）
+  - standard_unit（店內統一單位，如：公斤）
+  - category（葉菜類/根莖類/肉品/滷包料...）
+
+Receipt（單張進貨單記錄，對應一張拍照的紙本單）
+  - id
+  - vendor_id
+  - photo_url（原始照片存檔路徑）
+  - captured_at
+  - status（辨識中/待覆核/已確認/已匯出）
+  - raw_ocr_json（LLM原始回傳，供除錯/覆核比對用）
+
+ReceiptLine（單據明細列，一張Receipt對多筆）
+  - id
+  - receipt_id
+  - vendor_item_name_raw（辨識出的原始品名文字）
+  - store_item_id（人工確認/系統比對後對應到的標準品項）
+  - qty_raw / unit_raw（原始數量與單位）
+  - qty_converted / unit_converted（換算後的店內單位數量）
+  - unit_price（單價，注意：若供應商單位換算，單價也需對應換算）
+  - confirmed（是否已人工確認）</code></pre>
+
+  <h2>辨識 Prompt / Schema 設計要點</h2>
+  <ul>
+    <li>明確要求輸出固定JSON schema（例：<code>vendor_name_guess</code>, <code>date_guess</code>, <code>items: [{name, qty, unit, unit_price}]</code>），並在prompt中舉幾個真實單據範例（few-shot），提升穩定性。</li>
+    <li>若辨識不確定（字跡模糊），要求模型明確標記 <code>confidence: low</code> 或留空，而不是硬猜——寧可讓店長補填，也不要讓模型「編造」看起來合理但錯誤的數字。</li>
+    <li>建議先用少量真實單據照片做小規模測試（10~20張），評估辨識穩定度與常見錯誤類型，再決定是否加額外後處理規則。</li>
+  </ul>
+
+  <h2>單位換算：務必獨立於辨識邏輯</h2>
+  <p>這是整個系統「正確性」最重要的一塊，且<strong>完全不該依賴辨識模型去猜換算率</strong>——換算規則要在 <code>VendorItemMapping</code> 表中由人工事先建好、店長可自行維護。辨識模型只需抓出「原始寫的數字與單位文字」，換算永遠由系統依規則表計算，確保帳目正確且可追溯來源。</p>
+
+  <h2>部署建議（MVP）</h2>
+  <ul>
+    <li>單店使用，資料量小：可先用一台小型雲主機（或店內電腦）跑Node.js + SQLite，不需複雜雲端架構。</li>
+    <li>若之後考慮擴散到其他分店，再評估換成集中式後端（PostgreSQL + 多租戶資料模型，每店一個store_id）。</li>
+  </ul>
+
+  <div class="footer-nav">
+    <button data-page="p5">← 成本試算 / 開源 / 台灣市場</button>
+    <button data-page="p4">下一篇：路線圖與待確認事項 →</button>
+  </div>
+</section>
+
+<!-- P4 路線圖 -->
+<section class="page" id="p4">
+  <h1>05 · MVP 路線圖與待確認事項</h1>
+  <p class="page-desc">第一版做到哪，以及需要與店長確認的關鍵資訊</p>
+
+  <h2>MVP 範圍建議</h2>
+  <ol>
+    <li>Vue拍照上傳頁（單張照片上傳）。</li>
+    <li>Node.js後端呼叫LLM Vision API，回傳結構化品項清單。</li>
+    <li>基本供應商/品項對照表（先手動建幾家常用供應商與品項，不求一開始就自動比對完美）。</li>
+    <li>覆核頁：店長可修改辨識結果、指定/新增品項對照、確認換算後數量正確。</li>
+    <li>確認後存入SQLite，並可匯出當日/當週CSV。</li>
+  </ol>
+
+  <h3>先不做（等MVP驗證可用後再排）</h3>
+  <ul>
+    <li>多張連續拍照/批次處理</li>
+    <li>自動比對「這張單價跟上次進貨差多少」等進階分析</li>
+    <li>與POS的自動API串接（除非確認POS支援）</li>
+    <li>多分店/多帳號權限管理</li>
+  </ul>
+
+  <h2>待確認事項</h2>
+  <p>需要店長/相關人員提供資訊，才能把架構訂得更準：</p>
+  <ol>
+    <li><strong>POS系統是不是有「匯入」功能？</strong>（支援匯入CSV/Excel建立進貨單）還是完全沒有任何匯入管道，只能人工在POS介面重打？這會決定「匯出」這一步的最終格式要對齊什麼規格。</li>
+    <li><strong>POS系統廠牌/名稱是什麼？</strong> 若之後要接觸廠商詢問是否有API或匯入格式文件，需要知道是哪套系統。</li>
+    <li><strong>供應商單據範例</strong>：能否取得每家供應商（最多5家）近期的實際單據照片各1~2張（可去識別化敏感資訊），用來實測LLM辨識穩定度、以及設計對照表初始資料。</li>
+    <li><strong>單位換算規則從哪來？</strong> 是店長心裡有一套經驗值（如：1台斤=0.6公斤），還是供應商單據上其實有寫清楚單位，只是要店內統一顯示格式？</li>
+    <li><strong>「新品項/新供應商」出現時的處理流程</strong>：是否要求店長當下在覆核頁手動建立對照，還是先允許「未對照」狀態、之後再統一整理？</li>
+    <li><strong>資料存放位置偏好</strong>：店內是否已有可跑Node.js服務的電腦/主機，還是希望部署在雲端（需考慮主機費用、以及LLM API費用由誰負擔）？</li>
+  </ol>
+
+  <h2>下一步建議</h2>
+  <p>先用少量真實單據照片，做一個「拍照→丟給LLM Vision API→看JSON輸出品質」的小型驗證（不需要完整系統，一支腳本即可），確認辨識可行性與常見錯誤模式，再決定是否照本文件的架構往下開發。驗證通過後，再依MVP範圍表逐步實作。</p>
+
+  <div class="footer-nav">
+    <button data-page="p3">← 系統架構提案</button>
+    <button data-page="p6">下一篇：Vision Prompt / 驗證腳本 →</button>
+  </div>
+</section>
+
+<!-- P6 Vision Prompt / Schema -->
+<section class="page" id="p6">
+  <h1>06 · 台灣送貨單格式模擬 + Vision Prompt / Schema 設計</h1>
+  <p class="page-desc">還沒有真實供應商單據照片，先用模擬範例把辨識用的 prompt 與 schema 設計出來</p>
+
+  <div class="callout">
+    Claude Max 訂閱額度不含 Anthropic API 用量，實際呼叫 Vision API 才會依用量計費（每張約US$0.01~0.015，見「成本試算」分頁）。這裡先把 prompt/schema/腳本骨架準備好、<strong>不執行</strong>，之後有真實單據照片或想正式測試時，再自備API key跑，或直接把照片丟給對話中的Claude做免費示範辨識。
+  </div>
+
+  <h2>台灣傳統食材送貨單常見格式特徵</h2>
+  <ul>
+    <li>多為<strong>三聯式複寫單</strong>（存查聯／客戶聯／會計聯），複寫紙手寫，或半手寫半印刷。</li>
+    <li>抬頭區：供應商名稱、（可能有）統一編號、地址電話、單據編號、日期；客戶欄為送達門市名稱。</li>
+    <li>品項表格常見欄位：品名／規格／數量／單位／單價／金額／備註，但<strong>不是每家都齊全</strong>——小型菜商可能只有品名、數量、單價三欄，單位常手寫在數量旁而非獨立成欄（例：「青江菜 5台斤 @35」）。</li>
+    <li>計價單位以「台斤」（1台斤=600克）為主，也可能是公斤、箱、包、尾（海鮮），且「台斤」與「市斤/公制斤」偶爾混用——這點必須靠供應商對照表鎖定，不能靠辨識模型自己判斷。</li>
+    <li>單據下方常有供應商<strong>大小章</strong>及簽收欄，章可能蓋在品項表格上造成部分字跡被遮蓋。</li>
+    <li>複寫紙字跡濃淡不一，手寫潦草，數字7與1、6與0容易混淆，是傳統OCR的痛點所在。</li>
+  </ul>
+
+  <h2>模擬範例單據（非真實廠商資料，僅供設計參考）</h2>
+  <pre><code>┌───────────────────────────────────────────────┐
+│  金*蔬果行                        送貨單編號: 0417 │
+│  電話: 04-xxxx-xxxx                日期: 2026/08/30 │
+│  客戶: 川辣香 OO店                                  │
+├───────────────────────────────────────────────┤
+│ 品名        │ 數量   │ 單位 │ 單價  │ 金額     │
+├───────────────────────────────────────────────┤
+│ 青江菜       │  5     │ 台斤 │  35   │  175    │
+│ 小白菜       │  3     │ 台斤 │  30   │  90     │
+│ 高麗菜       │  2     │ 顆   │  45   │  90     │
+│ 豆芽         │  4     │ 台斤 │  20   │  80     │
+├───────────────────────────────────────────────┤
+│                              合計:  435          │
+│                         [廠商章戳，部分蓋在表格邊緣]│
+└───────────────────────────────────────────────┘
+（手寫字跡、複寫紙偏淡、部分數字被印章邊緣壓到）</code></pre>
+  <p>這份模擬單刻意包含幾個真實情境常見的雜訊：字跡而非印刷體、單位手寫在數量欄內、印章壓到表格邊緣、合計欄位可能和明細加總對不上（人工手寫易算錯，系統應以明細加總為準，不要直接信合計數字）。</p>
+
+  <h2>JSON Schema 設計</h2>
+  <pre><code>{
+  "vendor_name_guess": "金*蔬果行",
+  "receipt_no_guess": "0417",
+  "date_guess": "2026-08-30",
+  "items": [
+    {
+      "name_raw": "青江菜",
+      "qty_raw": "5",
+      "unit_raw": "台斤",
+      "unit_price_raw": "35",
+      "amount_raw": "175",
+      "confidence": "high"
+    },
+    {
+      "name_raw": "高麗菜",
+      "qty_raw": "2",
+      "unit_raw": "顆",
+      "unit_price_raw": "45",
+      "amount_raw": "90",
+      "confidence": "medium"
+    }
+  ],
+  "total_amount_on_receipt": "435",
+  "notes": "部分品項被印章遮蓋，已標記為低信心"
+}</code></pre>
+  <p>設計原則：全部欄位保留「原始字面」（<code>*_raw</code>），不要求模型在這一步就換算單位或比對到店內品項代碼——這些交給後端 <code>VendorItemMapping</code> 規則表處理。每個品項附 <code>confidence</code>（high/medium/low），低信心欄位在覆核UI要用顏色標出來。<code>total_amount_on_receipt</code> 只作參考值，系統應自己加總 <code>items[].amount_raw</code> 並與此值比對，兩者對不上要提醒店長。</p>
+
+  <h2>System Prompt 設計要點</h2>
+  <pre><code>你是一個食材送貨單辨識助手。請仔細觀察這張手寫/複寫紙送貨單照片，
+盡量原樣抄錄單據上寫的文字與數字，不要自行換算單位、不要自行修正
+看起來「合理」的數字。若某個欄位因為印章遮蓋、字跡模糊而無法確定，
+仍要填入你最可能的判讀，但將該欄位的 confidence 標為 low，絕對不要
+留空或用猜測值冒充高信心結果。輸出必須嚴格符合給定的 JSON schema，
+不要加入額外文字說明。</code></pre>
+  <ul>
+    <li>明確禁止模型「自己換算單位」——這是店家對照表的責任，不是辨識模型的責任。</li>
+    <li>要求「原樣抄錄」而非「合理化修正」，避免模型把手寫潦草的數字自動腦補成看起來合理但錯誤的數字。</li>
+    <li>要求嚴格JSON輸出，方便後端直接parse。</li>
+    <li>拿到店長供應商真實單據後，把2~3張範例（含人工校正版辨識結果）放進prompt做few-shot，能顯著提升穩定度，尤其是辨識「這家供應商的字跡習慣」。</li>
+  </ul>
+
+  <h2>這類台灣手寫送貨單特有的OCR難點</h2>
+  <ul>
+    <li>複寫紙字跡偏淡、部分區域幾乎看不清楚，需靠模型的上下文推理而非單純逐字辨識。</li>
+    <li>「台斤」「斤」「公斤」「包」「箱」等單位常縮寫成一兩個字甚至用符號代替，同一供應商不同天寫法可能不一致。</li>
+    <li>印章蓋在表格上是台灣單據常見情況，容易遮蓋數字，需要「低信心標記」機制而非要求100%辨識率。</li>
+    <li>部分小型供應商純手寫、沒有印刷格線，表格結構要靠模型自己判斷「這一行對應哪些欄位」——這正是LLM Vision比傳統框線偵測型OCR（如img2table）更有優勢之處，但也代表萬一模型判斷錯換行對應關係，人工覆核這一步更不能省。</li>
+  </ul>
+
+  <h2>驗證腳本（骨架，尚未執行）</h2>
+  <p><code>scripts/claude-vision-ocr.js</code> 依上述schema與prompt寫好的Node.js骨架，讀入圖片、呼叫Claude API、印出結構化JSON。要跑之前記得：</p>
+  <pre><code>cd scripts
+npm install
+export ANTHROPIC_API_KEY=sk-ant-xxxxx
+node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
+  <p>沒有API key、不執行這支腳本的話完全不花錢；免費驗證辨識可行性的方式是直接把單據照片提供給對話中的Claude做示範辨識。</p>
+
+  <div class="footer-nav">
+    <button data-page="p4">← 路線圖與待確認事項</button>
+    <button data-page="p0">回到總覽 →</button>
+  </div>
+</section>
+
+</main>
+
+<script>
+  const buttons = document.querySelectorAll('[data-page]');
+  function showPage(id){
+    document.querySelectorAll('section.page').forEach(s=>s.classList.toggle('active', s.id===id));
+    document.querySelectorAll('.navlist button').forEach(b=>b.classList.toggle('active', b.dataset.page===id));
+    window.scrollTo(0,0);
+    try{ localStorage.setItem('invosnap_last_page', id); }catch(e){}
+  }
+  buttons.forEach(b=>b.addEventListener('click', ()=>showPage(b.dataset.page)));
+  try{
+    const last = localStorage.getItem('invosnap_last_page');
+    if(last && document.getElementById(last)) showPage(last);
+  }catch(e){}
+</script>
+
+</body>
+</html>
