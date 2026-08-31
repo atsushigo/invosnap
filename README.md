@@ -17,6 +17,7 @@ InvoSnap 是一個獨立於總部POS之外的輔助小工具：手機拍照 → 
 4. [MVP 路線圖與待確認事項](docs/04-roadmap-open-questions.md)
 5. [成本試算、開源方案與台灣市場參考](docs/05-cost-and-oss-reference.md)
 6. [台灣送貨單格式模擬 + Vision Prompt/Schema 設計](docs/06-vision-prompt-schema.md) — 模擬單據範例、JSON schema、system prompt 設計
+7. [關鍵模組設計與可行性討論](docs/07-key-modules-feasibility.md) — 品項比對、拍照守門、覆核流程、匯出解耦、維護介面
 
 也可以直接開啟 `index.html`（分頁式整合版，含全部內容，適合快速瀏覽全貌）。
 

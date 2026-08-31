@@ -400,6 +400,7 @@
     <li><button data-page="p3"><span class="idx">04</span><span>系統架構提案</span></button></li>
     <li><button data-page="p4"><span class="idx">05</span><span>路線圖與待確認事項</span></button></li>
     <li><button data-page="p6"><span class="idx">06</span><span>Vision Prompt / 驗證腳本</span></button></li>
+    <li><button data-page="p7"><span class="idx">07</span><span>關鍵模組設計與可行性</span></button></li>
   </ul>
 </nav>
 
@@ -506,6 +507,7 @@
     <li>04 — 系統架構提案：Node.js + Vue 技術棧、資料模型、流程設計</li>
     <li>05 — MVP 路線圖與待確認事項</li>
     <li>06 — 台灣送貨單格式模擬 + Vision Prompt/Schema 設計、驗證腳本骨架</li>
+    <li>07 — 關鍵模組設計與可行性討論（品項比對、拍照守門、覆核流程、匯出解耦、維護介面）</li>
   </ul>
 </section>
 
@@ -700,16 +702,20 @@
 
   <h2>三、台灣本地 POS／零售科技廠商概況</h2>
   <p>調查目的：與其自己做，是否已有台灣廠商做過「拍照建檔進貨單」這類功能，可以直接採購或串接，省去自建的必要。</p>
+  <div class="callout">
+    <strong>深查後更新</strong>：瑞乘科技的「AI影像辨識」經查證是商品條碼/自助結帳辨識，與進貨單辨識無關（先前誤把另一家「瑞艾科技 iSeek」的服務混入瑞乘科技，已修正）。深查也找到一家<strong>明確做同類功能的競品 FOODIVAL</strong>，見下表。
+  </div>
   <div class="table-wrap"><table>
     <tr><th>廠商/服務</th><th>相關性</th><th>說明</th></tr>
-    <tr><td><strong>瑞乘科技（RIX，代理銀豹POSPAL）</strong></td><td><span class="badge mid">中</span></td><td>零售/餐飲收銀系統，提供AI影像辨識、自動報貨、供應鏈採購等功能，但公開資料偏向「商品條碼/影像辨識結帳」，未明確看到「供應商紙本進貨單拍照建檔」功能，需直接洽詢確認</td></tr>
-    <tr><td><strong>力新國際 NewSoft</strong></td><td><span class="badge mid">中</span></td><td>主力是企業「報支單據（收據/發票）OCR辨識」，技術路線與本案類似，但服務對象是一般企業報帳，非餐飲進貨場景，可作為「此技術在台灣已商業化」的佐證</td></tr>
+    <tr><td><strong>★ FOODIVAL（foodival-procurement.com）</strong></td><td><span class="badge good">高·直接命中</span></td><td>明確主打「餐廳前線員工用手機拍攝收貨單，AI自動識別食材名稱/數量/價格」，功能與InvoSnap設計<strong>完全一致</strong>。客戶為香港大中型連鎖餐飲（如但馬屋火鍋），未見明確服務台灣市場的資訊，定價未公開，中文手寫辨識支援度不明。聯絡：foodival@flexsystem.com</td></tr>
+    <tr><td><strong>力新國際 NewSoft</strong></td><td><span class="badge mid">中</span></td><td>有明確API/單機版產品「企業單據憑證辨識」，內建90萬筆廠商資料庫、支援手寫辨識，單機版每月不到千元，也有API可整合ERP，並提供免費試用。是台灣本地最接近的商用OCR方案，但服務定位是企業報支憑證，非餐飲進貨單場景，需洽詢是否可客製</td></tr>
+    <tr><td>瑞乘科技（RIX，代理銀豹POSPAL）</td><td><span class="badge low">低·已修正</span></td><td>官網確認其「自動報貨」是連鎖零售/餐飲的補貨/叫貨管理，AI影像辨識指的是手機商品掃描結帳，<strong>沒有</strong>進貨單/發票辨識功能</td></tr>
     <tr><td>群豐資訊</td><td><span class="badge low">低～中</span></td><td>餐飲營運管理POS，含採購決策、庫存管理，公開資訊未特別提及拍照辨識送貨單功能</td></tr>
     <tr><td>王品、瓦城等大型餐飲集團</td><td>參考</td><td>已導入進銷存/成本管理系統，顯示原料進貨數位化在台灣餐飲業有前例，但多為大型集團自建/客製系統，非中小型連鎖可直接取用</td></tr>
   </table></div>
 
   <div class="callout conclusion">
-    目前查到的台灣POS/餐飲科技廠商，多半把「AI影像辨識」用在<strong>結帳端</strong>（商品辨識、自助結帳），尚未查到有明確公開資料證實「專門做供應商紙本送貨單拍照轉結構化進貨資料」這個利基功能的現成台灣產品。這代表：這確實是一個總部POS目前沒做、坊間也沒有明顯現成替代品的功能缺口；但強烈建議在動工前，直接洽詢前述廠商（尤其瑞乘科技、力新國際），確認是否有非公開揭露的模組或客製服務可以直接採購——如果有，可能比自建更划算；如果沒有，也能更確認市場缺口。
+    <strong>FOODIVAL 的存在證明這個利基需求已被市場驗證過</strong>——至少在香港，已有廠商把「拍收貨單→AI辨識食材品項/數量/價格」做成商用產品賣給連鎖餐飲，代表InvoSnap的方向不是憑空想像的偽需求。但目前沒查到它服務台灣市場，中文手寫（尤其台式複寫紙送貨單）支援度也不明，值得直接寄信詢問是否服務台灣、報價、辨識能力。力新國際可以問問是否能客製到餐飲進貨單場景；瑞乘科技可降低優先度。如果洽詢後確認台灣沒有可直接採購的現成方案，自建InvoSnap的價值就更明確——甚至長期有機會往「做成產品賣給其他台灣中小型連鎖餐飲」發展。
   </div>
 
   <div class="footer-nav">
@@ -952,6 +958,59 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
 
   <div class="footer-nav">
     <button data-page="p4">← 路線圖與待確認事項</button>
+    <button data-page="p7">下一篇：關鍵模組設計與可行性 →</button>
+  </div>
+</section>
+
+<!-- P7 關鍵模組設計與可行性 -->
+<section class="page" id="p7">
+  <h1>07 · 關鍵模組設計與可行性討論</h1>
+  <p class="page-desc">還沒拿到真實單據範本、不急著寫程式，先把幾個決定「這個工具做不做得起來」的關鍵模組想清楚</p>
+
+  <h2>模組一：品項比對與新品項建檔（Matching Engine）</h2>
+  <p>供應商單據上寫的品名不會跟店內標準品項完全一樣——可能是「青江菜」vs 店內建的「青江菜(小)」，也可能潦草變成「菁江菜」，甚至同一供應商今天寫「大陸妹」明天寫「A菜」。這個比對沒做好，換算表就對不到，等於白做。</p>
+  <div class="table-wrap"><table>
+    <tr><th>做法</th><th>說明</th><th>可行性評估</th></tr>
+    <tr><td>A. 純精確比對（baseline）</td><td>品名字串完全相同才自動對應，對不上一律丟到「未對照」讓店長手動選</td><td>實作最簡單，但初期未對照筆數會很多，覆核負擔重</td></tr>
+    <tr><td>B. 傳統模糊比對（編輯距離）</td><td>用Levenshtein距離找最接近候選，列出前3名讓店長選</td><td>能處理「青江菜/菁江菜」這類同音異字，但「大陸妹/A菜」這種完全不同字的同義詞抓不到</td></tr>
+    <tr><td><strong>C. 讓LLM在辨識當下順便比對</strong></td><td>prompt裡附上店內標準品項清單，請模型辨識時直接標出最可能對應項，都不像則標記新品項</td><td><span class="badge good">建議做法</span>不需額外開發比對引擎、不增加API呼叫次數，LLM對語意層級同義詞判斷能力遠優於編輯距離</td></tr>
+  </table></div>
+  <p><strong>建議</strong>：MVP直接採用C方案，把目前已知的店內標準品項清單（若在50~100項以內）放進system prompt。模型回傳時多帶一個 <code>matched_store_item_id_guess</code> 欄位，人工覆核只要確認/修正這個猜測即可。清單成長到上百種品項才需考慮向量檢索之類方案，以本案規模暫時不會遇到。</p>
+
+  <h2>模組二：拍照品質守門（Photo Quality Gate）</h2>
+  <p>手機拍照難免模糊、反光、拍到一半、光線太暗，這類照片辨識準確度會明顯下降，且浪費一次API呼叫與店長重拍等待的時間。</p>
+  <ul>
+    <li><strong>前端簡易檢查</strong>：上傳前用瀏覽器原生 Canvas API 檢查解析度過低、檔案過小（可能過度壓縮或幾乎全白/全黑），成本為零。</li>
+    <li><strong>進階模糊偵測</strong>（拉普拉斯算子等）：技術可行，但MVP階段CP值不高。</li>
+    <li><strong>交給LLM自我回報</strong>：prompt要求模型若整張圖模糊到無法辨識大部分文字，回傳 <code>photo_quality: "poor"</code> 旗標，前端提示重拍，而不是硬辨識出一堆低信心錯誤資料。</li>
+  </ul>
+  <p><strong>建議</strong>：MVP採「前端簡易檢查（擋掉明顯太小/太暗的照片）＋讓LLM自我回報照片品質」的組合，不做進階影像處理。</p>
+
+  <h2>模組三：信心度驅動的覆核流程</h2>
+  <ul>
+    <li>低信心欄位要用明顯顏色/圖示標出，自動排到列表最上方或另開一區「請確認」。</li>
+    <li>明細加總金額與單據上寫的合計金額對不上時，整張單據要有警示，不能默默放過。</li>
+    <li>「未對照到店內品項」跟「已對照但信心低」要分開處理——前者一定要店長手動選/建，後者只是提醒覆核。</li>
+  </ul>
+  <p><strong>可行性</strong>：純前端邏輯與UI設計問題，不涉及額外技術風險。</p>
+
+  <h2>模組四：匯出/POS串接的彈性設計（在還不知道POS規格的情況下）</h2>
+  <p>目前完全不知道總部POS支不支援匯入、格式是什麼。在不知道目標格式的情況下，系統內部維護一份「自己的標準匯出格式」，不依賴任何特定POS：</p>
+  <pre><code>日期, 供應商, 品項代碼, 品項名稱, 數量(店內單位), 單位, 單價, 金額, 備註</code></pre>
+  <p>所有辨識、換算、覆核確認都是往這份<strong>內部標準格式</strong>寫資料，跟POS完全解耦。等之後確認POS實際規格（或有沒有API）後，只需另外寫一層「轉換器/adapter」，核心系統完全不用動。</p>
+  <p><strong>可行性</strong>：標準adapter pattern，技術上沒有風險，重點是現在就把這個解耦的界線畫清楚，避免之後為配合某個POS格式把核心邏輯寫死。</p>
+
+  <h2>模組五：供應商/單位換算規則維護介面</h2>
+  <p>店長需要一個簡單畫面：新增/編輯供應商、新增/編輯「供應商品名→店內標準品項→換算率」對照規則、看到目前有哪些「未對照」品項待處理。</p>
+  <p><strong>可行性</strong>：標準CRUD表單頁面，是MVP前端工作量估算裡最沒風險的一塊。</p>
+
+  <h2>小結：目前設計是否站得住腳</h2>
+  <div class="callout conclusion">
+    上述五個模組合起來，整個系統的技術風險集中度其實很低——真正有不確定性的只有「LLM Vision辨識準確度到底夠不夠用」這一件事，這件事無法在沒有真實單據的情況下確認，其餘（比對、守門、覆核UI、匯出解耦、維護介面）都是常規工程工作。這也支持現在的判斷：<strong>等範本到手，先跑一次真實辨識驗證，比繼續往下設計更有意義</strong>——因為如果辨識準確度不夠，可能會回頭影響模組一（比對邏輯要不要更保守）跟模組三（覆核UI要不要更著重低信心提示）的設計，現在寫死反而可能要重改。
+  </div>
+
+  <div class="footer-nav">
+    <button data-page="p6">← Vision Prompt / 驗證腳本</button>
     <button data-page="p0">回到總覽 →</button>
   </div>
 </section>
