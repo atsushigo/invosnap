@@ -87,7 +87,7 @@ router.post("/recognize", upload.single("photo"), async (req, res) => {
     res.status(201).json(getReceiptWithLines(receiptId));
   } catch (err) {
     console.error("辨識失敗:", err);
-    res.status(502).json({ error: `辨識失敗: ${err.message}` });
+    res.status(502).json({ error: err.message });
   }
 });
 

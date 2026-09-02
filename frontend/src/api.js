@@ -9,6 +9,8 @@ async function handle(res) {
 }
 
 export const api = {
+  getHealth: () => fetch(`${BASE}/health`).then(handle),
+
   getVendors: () => fetch(`${BASE}/catalog/vendors`).then(handle),
   getStoreItems: () => fetch(`${BASE}/catalog/store-items`).then(handle),
   getMappings: () => fetch(`${BASE}/catalog/mappings`).then(handle),
