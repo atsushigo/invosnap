@@ -31,8 +31,21 @@ export const api = {
       body: JSON.stringify(patch),
     }).then(handle),
 
+  deleteLine: (receiptId, lineId) =>
+    fetch(`${BASE}/receipts/${receiptId}/lines/${lineId}`, { method: "DELETE" }).then(handle),
+
+  addLine: (receiptId, line) =>
+    fetch(`${BASE}/receipts/${receiptId}/lines`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(line),
+    }).then(handle),
+
   confirmReceipt: (receiptId) =>
     fetch(`${BASE}/receipts/${receiptId}/confirm`, { method: "POST" }).then(handle),
+
+  reopenReceipt: (receiptId) =>
+    fetch(`${BASE}/receipts/${receiptId}/reopen`, { method: "POST" }).then(handle),
 
   exportCsvUrl: () => `${BASE}/receipts/export/csv`,
 };

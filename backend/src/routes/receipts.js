@@ -1,13 +1,13 @@
 import { Router } from "express";
 import multer from "multer";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import db from "../db.js";
 import { recognizeReceiptImage } from "../vision.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const UPLOAD_DIR = join(__dirname, "..", "..", "uploads");
+export const UPLOAD_DIR = join(__dirname, "..", "..", "uploads");
 mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const MIME_BY_EXT = {
@@ -17,8 +17,18 @@ const MIME_BY_EXT = {
   ".webp": "image/webp",
 };
 
+// 用diskStorage保留副檔名，這樣 /uploads 靜態伺服時瀏覽器才能正確判斷Content-Type，
+// 覆核頁才能把原始照片直接嵌進<img>預覽（見docs/07模組三的延伸需求）
+const storage = multer.diskStorage({
+  destination: UPLOAD_DIR,
+  filename: (req, file, cb) => {
+    const ext = extname(file.originalname || "").toLowerCase() || ".jpg";
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  },
+});
+
 const upload = multer({
-  dest: UPLOAD_DIR,
+  storage,
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB，手機照片通常足夠
 });
 
@@ -44,7 +54,6 @@ router.post("/recognize", upload.single("photo"), async (req, res) => {
   }
 
   try {
-    const { readFileSync } = await import("node:fs");
     const imageBuffer = readFileSync(req.file.path);
     const result = await recognizeReceiptImage(imageBuffer, mimeType);
     const vendorId = guessVendorId(result.vendor_name_guess);
@@ -95,7 +104,18 @@ function getReceiptWithLines(id) {
   const receipt = db.prepare("SELECT * FROM receipts WHERE id = ?").get(id);
   if (!receipt) return null;
   const lines = db.prepare("SELECT * FROM receipt_lines WHERE receipt_id = ? ORDER BY id").all(id);
-  return { ...receipt, lines };
+  return { ...receipt, photo_url: receipt.photo_filename ? `/uploads/${receipt.photo_filename}` : null, lines };
+}
+
+function assertEditable(receipt, res) {
+  if (receipt.status === "confirmed") {
+    res.status(409).json({
+      error: "這筆單據已經確認入帳，不能直接修改。要修正的話，請先呼叫「重新開放編輯」把狀態退回待覆核，改完再重新確認一次。",
+      code: "receipt_locked",
+    });
+    return false;
+  }
+  return true;
 }
 
 router.get("/", (req, res) => {
@@ -105,7 +125,7 @@ router.get("/", (req, res) => {
        FROM receipts r ORDER BY r.created_at DESC`
     )
     .all();
-  res.json(rows);
+  res.json(rows.map((r) => ({ ...r, photo_url: r.photo_filename ? `/uploads/${r.photo_filename}` : null })));
 });
 
 // 匯出內部標準格式CSV（見 docs/07 模組四），只匯出已confirmed的單據
@@ -144,19 +164,33 @@ router.get("/:id", (req, res) => {
   res.json(receipt);
 });
 
-// 覆核頁修正某一列：指定店內品項代碼、標記已確認
+// 覆核頁修正某一列：可改店內品項對應、原始辨識欄位（發現辨識錯誤時直接訂正）、標記已確認
 router.patch("/:id/lines/:lineId", (req, res) => {
-  const { store_item_code, confirmed } = req.body;
+  const receipt = db.prepare("SELECT * FROM receipts WHERE id = ?").get(req.params.id);
+  if (!receipt) return res.status(404).json({ error: "找不到這筆單據" });
+  if (!assertEditable(receipt, res)) return;
+
+  const { store_item_code, confirmed, name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw } = req.body;
   const result = db
     .prepare(
       `UPDATE receipt_lines SET
          store_item_code = COALESCE(@store_item_code, store_item_code),
-         confirmed = COALESCE(@confirmed, confirmed)
+         confirmed = COALESCE(@confirmed, confirmed),
+         name_raw = COALESCE(@name_raw, name_raw),
+         qty_raw = COALESCE(@qty_raw, qty_raw),
+         unit_raw = COALESCE(@unit_raw, unit_raw),
+         unit_price_raw = COALESCE(@unit_price_raw, unit_price_raw),
+         amount_raw = COALESCE(@amount_raw, amount_raw)
        WHERE id = @lineId AND receipt_id = @receiptId`
     )
     .run({
       store_item_code: store_item_code ?? null,
       confirmed: confirmed === undefined ? null : confirmed ? 1 : 0,
+      name_raw: name_raw ?? null,
+      qty_raw: qty_raw ?? null,
+      unit_raw: unit_raw ?? null,
+      unit_price_raw: unit_price_raw ?? null,
+      amount_raw: amount_raw ?? null,
       lineId: req.params.lineId,
       receiptId: req.params.id,
     });
@@ -164,10 +198,44 @@ router.patch("/:id/lines/:lineId", (req, res) => {
   res.json(getReceiptWithLines(req.params.id));
 });
 
+// 辨識整列誤判（例如把備註誤看成一個品項）時，直接刪掉這一列
+router.delete("/:id/lines/:lineId", (req, res) => {
+  const receipt = db.prepare("SELECT * FROM receipts WHERE id = ?").get(req.params.id);
+  if (!receipt) return res.status(404).json({ error: "找不到這筆單據" });
+  if (!assertEditable(receipt, res)) return;
+
+  const result = db
+    .prepare("DELETE FROM receipt_lines WHERE id = ? AND receipt_id = ?")
+    .run(req.params.lineId, req.params.id);
+  if (result.changes === 0) return res.status(404).json({ error: "找不到這筆明細" });
+  res.json(getReceiptWithLines(req.params.id));
+});
+
+// 辨識漏掉某個品項時，店長可以手動補一列（例如照片被遮擋、或model漏抓）
+router.post("/:id/lines", (req, res) => {
+  const receipt = db.prepare("SELECT * FROM receipts WHERE id = ?").get(req.params.id);
+  if (!receipt) return res.status(404).json({ error: "找不到這筆單據" });
+  if (!assertEditable(receipt, res)) return;
+
+  const { name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, store_item_code } = req.body;
+  if (!name_raw) return res.status(400).json({ error: "手動新增的品項需要填品名" });
+
+  const info = db
+    .prepare(
+      `INSERT INTO receipt_lines (receipt_id, vendor_item_code, name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, matched_store_item_code_guess, store_item_code, confidence, confirmed)
+       VALUES (?, NULL, ?, ?, ?, ?, ?, NULL, ?, 'manual', 0)`
+    )
+    .run(req.params.id, name_raw, qty_raw ?? null, unit_raw ?? null, unit_price_raw ?? null, amount_raw ?? null, store_item_code ?? null);
+  res.status(201).json({ ...getReceiptWithLines(req.params.id), newLineId: info.lastInsertRowid });
+});
+
 // 店長按下「確認入帳」：要求每一列都已勾選confirmed，才把整張單據標記為confirmed
 router.post("/:id/confirm", (req, res) => {
   const receipt = getReceiptWithLines(req.params.id);
   if (!receipt) return res.status(404).json({ error: "找不到這筆單據" });
+  if (receipt.status === "confirmed") {
+    return res.status(409).json({ error: "這筆單據已經確認過了" });
+  }
   const unconfirmed = receipt.lines.filter((l) => !l.confirmed);
   if (unconfirmed.length > 0) {
     return res.status(409).json({
@@ -176,6 +244,18 @@ router.post("/:id/confirm", (req, res) => {
     });
   }
   db.prepare("UPDATE receipts SET status = 'confirmed' WHERE id = ?").run(req.params.id);
+  res.json(getReceiptWithLines(req.params.id));
+});
+
+// 已確認入帳的單據事後發現有錯，退回待覆核狀態才能繼續編輯，修正流程：
+// 確認入帳(誤) → 重新開放編輯 → 修正明細 → 重新確認入帳
+router.post("/:id/reopen", (req, res) => {
+  const receipt = db.prepare("SELECT * FROM receipts WHERE id = ?").get(req.params.id);
+  if (!receipt) return res.status(404).json({ error: "找不到這筆單據" });
+  if (receipt.status !== "confirmed") {
+    return res.status(409).json({ error: "只有已確認入帳的單據才需要重新開放編輯" });
+  }
+  db.prepare("UPDATE receipts SET status = 'pending_review' WHERE id = ?").run(req.params.id);
   res.json(getReceiptWithLines(req.params.id));
 });
 
