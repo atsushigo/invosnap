@@ -31,6 +31,9 @@ function friendlyVisionError(err) {
   if (raw.includes("anthropic-workspace-id")) {
     return "這組是「身分連動」型API key，還需要在 backend/.env 多填一行 ANTHROPIC_WORKSPACE_ID（去 console.anthropic.com 的 Workspace 設定頁找），設定好重啟後端即可，詳見 backend/README.md。";
   }
+  if (raw.includes("credit balance is too low")) {
+    return "Anthropic帳號額度不足，請到 console.anthropic.com → Settings → Billing 加卡儲值後再試一次（本案用量很小，US$5就能用很久，見 docs/10-vision-api-cost-backup-plan.md）。";
+  }
   if (err?.status === 401 || raw.includes("invalid x-api-key") || raw.includes("authentication_error")) {
     return "API Key 無效或已過期，請確認 backend/.env 裡的 ANTHROPIC_API_KEY 是否正確。";
   }
