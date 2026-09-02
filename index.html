@@ -436,13 +436,13 @@
   <div class="progress-card">
     <div class="progress-head">
       <div class="ptitle">整體完成度</div>
-      <div class="pmeta">最後更新：2026-09-03</div>
+      <div class="pmeta">最後更新：2026-09-03（新增主檔維護頁）</div>
     </div>
     <div class="progress-total">
-      <div class="pct" id="overallPct">62%</div>
-      <div class="track"><div class="fill" id="overallFill" style="width:62%"></div></div>
+      <div class="pct" id="overallPct">65%</div>
+      <div class="track"><div class="fill" id="overallFill" style="width:65%"></div></div>
     </div>
-    <div class="progress-def">100% 的定義：整個工具（拍照上傳、辨識、供應商對照/單位換算、覆核確認、匯出）完成開發與實測，可以正式提交給川醉湘店長與門市人員上線使用。本機MVP已完成拍照上傳（支援多頁）、卡片式覆核頁（行內編輯/單子分頁籤/縮放對照照片）、確認入帳、整筆刪除單據、CSV匯出，並用2張真實供應商單據測過真實Claude Vision辨識且成功，Playwright測試腳本已存進repo可重複執行。尚未部署到雲端、也還沒讓店長實際試用。</div>
+    <div class="progress-def">100% 的定義：整個工具（拍照上傳、辨識、供應商對照/單位換算、覆核確認、匯出）完成開發與實測，可以正式提交給川醉湘店長與門市人員上線使用。本機MVP已完成拍照上傳（支援多頁）、卡片式覆核頁（行內編輯/單子分頁籤/縮放對照照片）、確認入帳、整筆刪除單據、CSV匯出、<strong>菜單式主檔維護頁</strong>（店內主檔/供應商/廠商對照表可直接CRUD，不用再改JSON種子檔），並用2張真實供應商單據測過真實Claude Vision辨識且成功，Playwright測試腳本已存進repo可重複執行。尚未部署到雲端、也還沒讓店長實際試用；待店長回覆的問題已整理成Google文件，等分享權限設定好。</div>
 
     <div class="phase-list" id="phaseList">
       <div class="phase-row">
@@ -460,26 +460,26 @@
       <div class="phase-row">
         <div class="pname">待確認事項對齊（與店長確認POS匯入方式、供應商單據範例等）</div>
         <div class="pweight">權重 10%</div>
-        <div class="ptrack"><div class="pfill" style="width:20%"></div></div>
-        <div class="pval"><span class="badge mid">20%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:25%"></div></div>
+        <div class="pval"><span class="badge mid">25%</span></div>
       </div>
       <div class="phase-row">
-        <div class="pname">前端開發（拍照上傳／覆核UI，Vue）</div>
+        <div class="pname">前端開發（拍照上傳／覆核UI／主檔維護，Vue）</div>
         <div class="pweight">權重 15%</div>
-        <div class="ptrack"><div class="pfill" style="width:75%"></div></div>
-        <div class="pval"><span class="badge mid">75%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:82%"></div></div>
+        <div class="pval"><span class="badge mid">82%</span></div>
       </div>
       <div class="phase-row">
         <div class="pname">後端開發（API／辨識串接／資料庫，Node.js）</div>
         <div class="pweight">權重 20%</div>
-        <div class="ptrack"><div class="pfill" style="width:80%"></div></div>
-        <div class="pval"><span class="badge mid">80%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:85%"></div></div>
+        <div class="pval"><span class="badge mid">85%</span></div>
       </div>
       <div class="phase-row">
         <div class="pname">供應商對照表與單位換算邏輯</div>
         <div class="pweight">權重 10%</div>
-        <div class="ptrack"><div class="pfill" style="width:35%"></div></div>
-        <div class="pval"><span class="badge mid">35%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:45%"></div></div>
+        <div class="pval"><span class="badge mid">45%</span></div>
       </div>
       <div class="phase-row">
         <div class="pname">實測驗證（真實單據小規模測試）</div>
@@ -856,6 +856,16 @@ ReceiptLine（單據明細列，一張Receipt對多筆）
     <li>多分店/多帳號權限管理</li>
   </ul>
 
+  <h2>未來展望：進貨數據分析 <span class="badge todo">Phase 2+，非現階段目標</span></h2>
+  <div class="callout">
+    討論過店長未來可能會想要的延伸功能——<strong>各原料進貨價格的變化/趨勢圖表</strong>、<strong>同一品項跨供應商比價</strong>（哪家便宜哪家貴，輔助採購決策）。這個方向先記錄下來，但明確歸類為之後有空再推動的Phase 2+，<strong>現階段目標仍然是把「拍照→辨識→覆核→確認入帳→匯出」這條主功能流程打通、讓店長能實際日常使用</strong>，不在主流程穩定前分心做分析功能。
+  </div>
+  <ul>
+    <li><strong>可能的功能形態</strong>：某個店內標準品項（例如高麗菜）的歷史進貨單價折線圖；同一品項在不同供應商之間的單價比較；也可能延伸出「建議跟哪家採購」之類的判斷，但那更後面的事了。</li>
+    <li><strong>技術面不用現在準備</strong>：資料模型不需要為此提前改動——<code>receipt_lines</code>已有<code>unit_price_raw</code>/<code>amount_raw</code>/<code>store_item_code</code>，<code>receipts</code>已有<code>date_guess</code>/<code>vendor_id</code>，等累積夠多confirmed的真實資料，之後要做純粹是加一個查詢/圖表頁（例如Chart.js），不需要動現有辨識/覆核/主檔邏輯，現在不做也不會造成技術債。</li>
+    <li><strong>觸發時機</strong>：等主流程穩定上線、店長日常使用一段時間、累積足夠真實confirmed資料後，再評估要不要排上議程。</li>
+  </ul>
+
   <h2>待確認事項</h2>
   <p>需要店長/相關人員提供資訊，才能把架構訂得更準：</p>
   <ol>
@@ -1019,6 +1029,9 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
   <h2>模組五：供應商/單位換算規則維護介面</h2>
   <p>店長需要一個簡單畫面：新增/編輯供應商、新增/編輯「供應商品名→店內標準品項→換算率」對照規則、看到目前有哪些「未對照」品項待處理。</p>
   <p><strong>可行性</strong>：標準CRUD表單頁面，是MVP前端工作量估算裡最沒風險的一塊。</p>
+  <div class="callout">
+    <strong>✅ 已實作（2026-09-03）</strong>：<code>frontend/src/views/CatalogView.vue</code>（路由<code>/catalog</code>），一頁三個tab整合「店內主檔／供應商／廠商對照表」。店內主檔跟對照表改成<strong>菜單式呈現</strong>——參考Uber Eats等電子點餐平台的UX：上方分類/供應商切換籤可篩選、卡片格取代單行列表、卡片右下角小圖示按鈕編輯/刪除。新增品項/供應商時代碼自動產生，避免打錯或衝突；對照表選店內品項一樣是下拉選單，不開放自由輸入；刪除有防呆（還被引用就擋掉並說明擋在哪幾筆）。已用Playwright驗證。
+  </div>
 
   <h2>小結：目前設計是否站得住腳</h2>
   <div class="callout conclusion">
@@ -1316,8 +1329,8 @@ cd ~/Desktop/invosnap/frontend && npm install && npm run dev  # 預設想用5173
   <p>前端會透過vite.config.js的proxy把 <code>/api</code> 和 <code>/uploads</code> 轉給後端(localhost:3001)。想讓別人（例如店長）用手機看，可以用 <code>cloudflared tunnel --url http://localhost:5174</code> 開一個臨時公開網址（之前用過的網址是暫時的，session結束會失效，需要重新產生）。</p>
 
   <h2>已完成的功能（程式碼層面）</h2>
-  <p><strong>後端</strong>（<code>backend/src/</code>）：拍照辨識(<code>POST /recognize</code>，支援多檔=多頁)、單據列表/詳情、覆核修正(可訂正原始欄位)、刪除單一列、手動新增列、確認入帳、重新開放編輯、<strong>整筆刪除單據</strong>(含照片檔案)；Vision呼叫含sharp resize、多圖一次呼叫、寬鬆JSON解析、截斷偵測、中文化錯誤訊息；SQLite自動建表+種子資料+簡易欄位遷移。</p>
-  <p><strong>前端</strong>（<code>frontend/src/</code>）：上傳頁支援一次選多張照片（同一單據不同頁）；覆核頁左右分割（左：照片縮放/全螢幕；右：卡片式品項，行內編輯，「全部／單子1／單子2／單子3」分頁籤區分同一照片裡的不同紙本單子，已確認鎖定+重新開放編輯修正流程，手動新增品項強制從店內清單挑選）；單據列表含刪除按鈕。</p>
+  <p><strong>後端</strong>（<code>backend/src/</code>）：拍照辨識(<code>POST /recognize</code>，支援多檔=多頁)、單據列表/詳情、覆核修正(可訂正原始欄位)、刪除單一列、手動新增列、確認入帳、重新開放編輯、<strong>整筆刪除單據</strong>(含照片檔案)；Vision呼叫含sharp resize、多圖一次呼叫、寬鬆JSON解析、截斷偵測、中文化錯誤訊息；SQLite自動建表+種子資料+簡易欄位遷移；<strong>主檔維護</strong>(<code>routes/catalog.js</code>)新增了店內主檔/供應商/廠商對照表的POST/PATCH/DELETE（原本只有GET），代碼自動產生、刪除有防呆。</p>
+  <p><strong>前端</strong>（<code>frontend/src/</code>）：上傳頁支援一次選多張照片（同一單據不同頁）；覆核頁左右分割（左：照片縮放/全螢幕；右：卡片式品項，行內編輯，「全部／單子1／單子2／單子3」分頁籤區分同一照片裡的不同紙本單子，已確認鎖定+重新開放編輯修正流程，手動新增品項強制從店內清單挑選）；單據列表含刪除按鈕；<strong>新增「主檔維護」頁（<code>/catalog</code>）</strong>，把店內主檔/供應商/廠商對照表整合成菜單式UI——參考Uber Eats等電子菜單常見的分類切換籤+卡片格設計，上方分類/供應商切換籤可篩選，卡片右下角小圖示按鈕編輯/刪除，取代原本只能改JSON種子檔的方式。</p>
 
   <h2>目前的真實資料狀態</h2>
   <p>DB裡目前有2筆真實辨識過的單據，使用者打算清掉這兩筆測試資料、重新拍照上傳，用最新版系統重新走一次完整流程。清掉方式：<code>/receipts</code>列表頁按「刪除」（已確認狀態要先在覆核頁「重新開放編輯」才能刪）。</p>
@@ -1337,9 +1350,9 @@ cd ~/Desktop/invosnap/frontend && npm install && npm run dev  # 預設想用5173
 
   <h2>還沒解決的事情</h2>
   <ol>
-    <li><strong>POS系統是否支援匯入、匯入格式</strong>——完全未知，目前只做好內部標準格式CSV匯出，跟POS解耦</li>
-    <li><strong>供應商單據範例</strong>——只驗證過2家供應商的3張真實單據，店長最多有5家供應商</li>
-    <li><strong>09文件列的5筆needs_confirmation品項</strong>——需要問店長</li>
+    <li><strong>待店長回答的問題已整理成Google文件</strong>（店內主檔／廠商對照表／廠商基本資料／POS／單位換算，共6題），還沒設定分享權限給店長；已在對話中確認、不用再問的：新品項/新供應商流程（當下手動建立＋之後統一整理，對應現在的<code>/catalog</code>頁）、API費用先不問（還在試驗階段）</li>
+    <li><strong>POS系統是否支援匯入、匯入格式</strong>——完全未知，已列進Google文件</li>
+    <li><strong>供應商單據範例</strong>——只驗證過3家供應商（鮮味嘉、雄泉鮮食、阿凱生蔬），店長最多有5家供應商，已列進Google文件</li>
     <li><strong>Hetzner雲端部署</strong>——之後再議，已知判斷：不要跟trading-monorepo正式機共用</li>
     <li><strong>多頁單子的doc-tabs功能還沒用真實多頁資料測過</strong>——目前只用假資料驗證UI邏輯，等使用者重新上傳才能看到真正效果</li>
   </ol>
