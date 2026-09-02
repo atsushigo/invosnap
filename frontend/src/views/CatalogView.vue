@@ -15,7 +15,7 @@
 
     <div v-if="error" class="error-box">{{ error }}</div>
 
-    <!-- ============ 店內主檔 ============ -->
+    <!-- ============ 店內主檔（菜單式呈現：分類切換 + 卡片格） ============ -->
     <section v-if="tab === 'items'">
       <form class="add-form card" @submit.prevent="submitNewItem">
         <h3>新增店內品項</h3>
@@ -41,30 +41,54 @@
         <button class="primary" type="submit">新增品項（代碼自動產生）</button>
       </form>
 
-      <div v-for="group in groupedItems" :key="group.category" class="card group-card">
-        <h4>{{ group.category }}　<span class="dim">({{ group.items.length }}項)</span></h4>
-        <div class="row-list">
-          <div v-for="item in group.items" :key="item.code" class="row-item">
+      <div class="menu-toolbar">
+        <div class="menu-nav">
+          <button
+            v-for="c in itemCategoryNav"
+            :key="c.key"
+            :class="{ active: itemCategoryFilter === c.key }"
+            @click="itemCategoryFilter = c.key"
+          >
+            {{ c.label }} <span class="nav-count">{{ c.count }}</span>
+          </button>
+        </div>
+        <input v-model="itemSearch" class="menu-search" type="text" placeholder="搜尋品項名稱／代碼..." />
+      </div>
+
+      <p v-if="filteredGroupedItems.length === 0" class="empty-hint">找不到符合的品項，換個關鍵字或分類看看。</p>
+
+      <div v-for="group in filteredGroupedItems" :key="group.category" class="menu-section">
+        <h4 class="menu-section-title">{{ group.category }}　<span class="dim">({{ group.items.length }}項)</span></h4>
+        <div class="menu-grid">
+          <div v-for="item in group.items" :key="item.code" class="menu-card" :class="{ editing: editingItem === item.code }">
             <template v-if="editingItem === item.code">
-              <input v-model="editItemDraft.name" type="text" />
-              <select v-model="editItemDraft.category">
+              <input v-model="editItemDraft.name" type="text" class="edit-input" />
+              <select v-model="editItemDraft.category" class="edit-input">
                 <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
               </select>
-              <select v-model="editItemDraft.standard_unit">
+              <select v-model="editItemDraft.standard_unit" class="edit-input">
                 <option v-for="u in commonUnits" :key="u" :value="u">{{ u }}</option>
                 <option v-if="!commonUnits.includes(editItemDraft.standard_unit)" :value="editItemDraft.standard_unit">
                   {{ editItemDraft.standard_unit }}
                 </option>
               </select>
-              <button class="secondary small" @click="saveItem(item.code)">儲存</button>
-              <button class="secondary small" @click="editingItem = null">取消</button>
+              <div class="menu-card-foot">
+                <button class="secondary small" @click="saveItem(item.code)">儲存</button>
+                <button class="secondary small" @click="editingItem = null">取消</button>
+              </div>
             </template>
             <template v-else>
-              <span class="code-tag">{{ item.code }}</span>
-              <span class="name">{{ item.name }}</span>
-              <span class="dim">{{ item.standard_unit }}</span>
-              <button class="secondary small" @click="startEditItem(item)">編輯</button>
-              <button class="secondary small danger" @click="removeItem(item)">刪除</button>
+              <div class="menu-card-head">
+                <span class="menu-card-name">{{ item.name }}</span>
+                <span class="code-tag">{{ item.code }}</span>
+              </div>
+              <div class="menu-card-foot">
+                <span class="unit-chip">{{ item.standard_unit }}</span>
+                <div class="card-actions">
+                  <button class="icon-btn" title="編輯" @click="startEditItem(item)">✎</button>
+                  <button class="icon-btn danger" title="刪除" @click="removeItem(item)">✕</button>
+                </div>
+              </div>
             </template>
           </div>
         </div>
@@ -116,7 +140,7 @@
       </div>
     </section>
 
-    <!-- ============ 廠商對照表 ============ -->
+    <!-- ============ 廠商對照表（菜單式呈現：供應商切換 + 狀態篩選 + 卡片格） ============ -->
     <section v-if="tab === 'mappings'">
       <form class="add-form card" @submit.prevent="submitNewMapping">
         <h3>新增對照</h3>
@@ -150,43 +174,65 @@
         <button class="primary" type="submit">新增對照</button>
       </form>
 
+      <div class="menu-nav">
+        <button
+          v-for="v in mappingVendorNav"
+          :key="v.key"
+          :class="{ active: mappingVendorFilter === v.key }"
+          @click="mappingVendorFilter = v.key"
+        >
+          {{ v.label }} <span class="nav-count">{{ v.count }}</span>
+        </button>
+      </div>
       <div class="tab-filter">
         <button v-for="f in statusFilters" :key="f.key" :class="{ active: statusFilter === f.key }" @click="statusFilter = f.key">
           {{ f.label }}
         </button>
       </div>
 
-      <div v-for="group in filteredMappingsByVendor" :key="group.vendor_id" class="card group-card">
-        <h4>{{ group.vendor_name }}</h4>
-        <div class="row-list">
-          <div v-for="m in group.mappings" :key="m.id" class="row-item mapping-row">
+      <p v-if="filteredMappingsByVendor.length === 0" class="empty-hint">找不到符合條件的對照，換個供應商或狀態篩選看看。</p>
+
+      <div v-for="group in filteredMappingsByVendor" :key="group.vendor_id" class="menu-section">
+        <h4 class="menu-section-title">{{ group.vendor_name }}　<span class="dim">({{ group.mappings.length }}筆)</span></h4>
+        <div class="menu-grid">
+          <div v-for="m in group.mappings" :key="m.id" class="menu-card mapping-card" :class="{ editing: editingMapping === m.id }">
             <template v-if="editingMapping === m.id">
-              <input v-model="editMappingDraft.vendor_item_code" type="text" placeholder="廠商編號" />
-              <input v-model="editMappingDraft.vendor_item_name_raw" type="text" placeholder="廠商品名" class="wide-input" />
-              <select v-model="editMappingDraft.store_item_code">
+              <input v-model="editMappingDraft.vendor_item_code" type="text" class="edit-input" placeholder="廠商編號" />
+              <input v-model="editMappingDraft.vendor_item_name_raw" type="text" class="edit-input" placeholder="廠商品名" />
+              <select v-model="editMappingDraft.store_item_code" class="edit-input">
                 <option value="">— 尚未對照 —</option>
                 <optgroup v-for="g in groupedItems" :key="g.category" :label="g.category">
                   <option v-for="item in g.items" :key="item.code" :value="item.code">{{ item.name }}</option>
                 </optgroup>
               </select>
-              <select v-model="editMappingDraft.status">
+              <select v-model="editMappingDraft.status" class="edit-input">
                 <option value="confirmed">已確認</option>
                 <option value="needs_confirmation">待確認</option>
                 <option value="new_item">新品項</option>
               </select>
-              <input v-model="editMappingDraft.note" type="text" placeholder="備註" class="wide-input" />
-              <button class="secondary small" @click="saveMapping(m.id)">儲存</button>
-              <button class="secondary small" @click="editingMapping = null">取消</button>
+              <input v-model="editMappingDraft.note" type="text" class="edit-input" placeholder="備註" />
+              <div class="menu-card-foot">
+                <button class="secondary small" @click="saveMapping(m.id)">儲存</button>
+                <button class="secondary small" @click="editingMapping = null">取消</button>
+              </div>
             </template>
             <template v-else>
-              <span class="code-tag" v-if="m.vendor_item_code">{{ m.vendor_item_code }}</span>
-              <span class="name">{{ m.vendor_item_name_raw }}</span>
-              <span class="arrow">→</span>
-              <span :class="{ dim: !m.store_item_name }">{{ m.store_item_name || "尚未對照" }}</span>
-              <span class="badge" :class="statusBadgeClass(m.status)">{{ statusLabel(m.status) }}</span>
-              <span v-if="m.note" class="dim note">「{{ m.note }}」</span>
-              <button class="secondary small" @click="startEditMapping(m)">編輯</button>
-              <button class="secondary small danger" @click="removeMapping(m)">刪除</button>
+              <div class="menu-card-head">
+                <span class="menu-card-name">{{ m.vendor_item_name_raw }}</span>
+                <span v-if="m.vendor_item_code" class="code-tag">{{ m.vendor_item_code }}</span>
+              </div>
+              <div class="mapping-arrow-row">
+                <span class="arrow">→</span>
+                <span :class="{ dim: !m.store_item_name }">{{ m.store_item_name || "尚未對照" }}</span>
+              </div>
+              <p v-if="m.note" class="menu-card-note">「{{ m.note }}」</p>
+              <div class="menu-card-foot">
+                <span class="badge" :class="statusBadgeClass(m.status)">{{ statusLabel(m.status) }}</span>
+                <div class="card-actions">
+                  <button class="icon-btn" title="編輯" @click="startEditMapping(m)">✎</button>
+                  <button class="icon-btn danger" title="刪除" @click="removeMapping(m)">✕</button>
+                </div>
+              </div>
             </template>
           </div>
         </div>
@@ -196,7 +242,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import { api } from "../api.js";
 
 const tab = ref("items");
@@ -210,7 +256,7 @@ const mappings = ref([]);
 const commonUnits = ["台斤", "公斤", "包", "盒", "箱", "條", "顆", "支", "片"];
 const categories = ["葉菜類", "根莖/瓜果類", "菇類", "豆製品", "加工肉品/丸類", "主食/澱粉類", "配料/其他"];
 const statusFilters = [
-  { key: "all", label: "全部" },
+  { key: "all", label: "全部狀態" },
   { key: "needs_confirmation", label: "待確認" },
   { key: "confirmed", label: "已確認" },
   { key: "new_item", label: "新品項" },
@@ -254,6 +300,27 @@ const groupedItems = computed(() => {
     map.get(key).push(item);
   }
   return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
+});
+
+// 菜單式的分類切換列（像電子菜單上方的分類籤），點選只顯示該分類，「全部」顯示全部分類分段呈現
+const itemCategoryFilter = ref("all");
+const itemSearch = ref("");
+const itemCategoryNav = computed(() => [
+  { key: "all", label: "全部", count: storeItems.value.length },
+  ...groupedItems.value.map((g) => ({ key: g.category, label: g.category, count: g.items.length })),
+]);
+const filteredGroupedItems = computed(() => {
+  let base = groupedItems.value;
+  if (itemCategoryFilter.value !== "all") {
+    base = base.filter((g) => g.category === itemCategoryFilter.value);
+  }
+  const q = itemSearch.value.trim().toLowerCase();
+  if (q) {
+    base = base
+      .map((g) => ({ ...g, items: g.items.filter((i) => i.name.toLowerCase().includes(q) || i.code.toLowerCase().includes(q)) }))
+      .filter((g) => g.items.length > 0);
+  }
+  return base;
 });
 
 const newItem = reactive({ name: "", category: categories[0], customCategory: "", standard_unit: commonUnits[0], customUnit: "" });
@@ -366,8 +433,19 @@ async function submitNewMapping() {
   });
 }
 
+// 菜單式的供應商切換列，搭配下面既有的狀態篩選，兩個條件一起篩
+const mappingVendorFilter = ref("all");
+const mappingVendorNav = computed(() => [
+  { key: "all", label: "全部供應商", count: mappings.value.length },
+  ...vendors.value.map((v) => ({ key: v.id, label: v.name, count: mappings.value.filter((m) => m.vendor_id === v.id).length })),
+]);
+
 const filteredMappingsByVendor = computed(() => {
-  const filtered = mappings.value.filter((m) => statusFilter.value === "all" || m.status === statusFilter.value);
+  const filtered = mappings.value.filter(
+    (m) =>
+      (statusFilter.value === "all" || m.status === statusFilter.value) &&
+      (mappingVendorFilter.value === "all" || m.vendor_id === mappingVendorFilter.value)
+  );
   const map = new Map();
   for (const m of filtered) {
     const key = m.vendor_id || "unknown";
@@ -418,24 +496,129 @@ async function removeMapping(m) {
 }
 </script>
 
+<style>
+/* 主檔維護頁的卡片格子需要比一般頁面更寬的版面，支援:has()的瀏覽器才會放寬，
+   不支援的話退回原本900px也還是堪用，只是每排卡片數變少 */
+body:has(.catalog-view) main.content {
+  max-width: 1200px;
+}
+</style>
+
 <style scoped>
 .catalog-view { max-width: 100%; }
 .hint { color: var(--text-dim); font-size: 0.88rem; margin-bottom: 16px; }
 
 .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-.tabs button, .tab-filter button {
+.tabs button, .tab-filter button, .menu-nav button {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 14px;
+  border-radius: 999px;
+  padding: 7px 14px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--text-dim);
+  white-space: nowrap;
 }
-.tabs button.active, .tab-filter button.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; border-color: var(--accent); }
+.tabs button { border-radius: 8px; }
+.tabs button.active, .tab-filter button.active, .menu-nav button.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  border-color: var(--accent);
+}
 .tab-count { font-size: 0.75rem; opacity: 0.7; margin-left: 4px; }
-.tab-filter { display: flex; gap: 6px; margin: 12px 0; }
+.tab-filter { display: flex; gap: 6px; margin: 10px 0 16px; flex-wrap: wrap; }
 
+/* ---------- 菜單式導覽（分類/供應商切換列，仿電子菜單的分類籤） ---------- */
+.menu-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 4px 0 18px; }
+.menu-nav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin: 4px 0 10px;
+  scrollbar-width: thin;
+}
+.nav-count { font-size: 0.72rem; opacity: 0.75; }
+.menu-search {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.88rem;
+  min-width: 220px;
+  flex: 1 1 220px;
+}
+.empty-hint { color: var(--text-dim); font-size: 0.9rem; padding: 20px 0; text-align: center; }
+
+.menu-section { margin-bottom: 26px; }
+.menu-section-title {
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--accent-soft);
+  font-size: 1.02rem;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.menu-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.menu-card.editing { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.menu-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.menu-card-name { font-weight: 700; font-size: 1rem; line-height: 1.3; }
+.menu-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+.menu-card-note { margin: 0; font-style: italic; color: var(--text-dim); font-size: 0.82rem; }
+.mapping-arrow-row { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+.mapping-arrow-row .arrow { color: var(--text-dim); }
+.mapping-arrow-row .dim { color: var(--text-dim); }
+
+.unit-chip {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+.code-tag {
+  font-family: monospace;
+  background: #efe7dd;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.card-actions { display: flex; gap: 6px; }
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn.danger { color: var(--low); border-color: var(--low); }
+
+.edit-input { width: 100%; }
+
+/* ---------- 舊有列表樣式（供應商tab仍在用） ---------- */
 .add-form h3 { margin-top: 0; }
 .form-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
 .form-row label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-dim); }
@@ -457,13 +640,6 @@ async function removeMapping(m) {
 }
 .row-item .name { font-weight: 600; }
 .row-item .dim { color: var(--text-dim); font-size: 0.85rem; }
-.row-item .code-tag {
-  font-family: monospace;
-  background: #efe7dd;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.78rem;
-}
 .row-item .arrow { color: var(--text-dim); }
 .row-item .note { font-style: italic; }
 .row-item .wide-input { flex: 1 1 160px; }
