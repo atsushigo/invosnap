@@ -40,30 +40,29 @@
           <table>
             <thead>
               <tr>
-                <th>原始品名</th>
+                <th class="col-name">原始品名</th>
                 <th>數量</th>
                 <th>單位</th>
                 <th>單價</th>
                 <th>金額</th>
                 <th>信心</th>
-                <th>對應店內品項</th>
+                <th class="col-match">對應店內品項</th>
                 <th>已確認</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="line in receipt.lines" :key="line.id" :class="{ locked: readonly }">
-                <td>
+                <td class="col-name">
                   <input
                     type="text"
-                    class="cell-input"
+                    class="cell-input name"
                     :value="line.name_raw"
+                    :title="line.name_raw"
                     :disabled="readonly"
                     @change="onFieldChange(line, 'name_raw', $event.target.value)"
                   />
-                  <span v-if="line.vendor_item_code" style="color: var(--text-dim); font-size: 0.72rem">
-                    ({{ line.vendor_item_code }})
-                  </span>
+                  <span v-if="line.vendor_item_code" class="vendor-code">({{ line.vendor_item_code }})</span>
                 </td>
                 <td>
                   <input
@@ -102,12 +101,14 @@
                   />
                 </td>
                 <td><span :class="['badge', line.confidence]">{{ confidenceLabel(line.confidence) }}</span></td>
-                <td>
+                <td class="col-match">
                   <select :value="line.store_item_code || ''" :disabled="readonly" @change="onStoreItemChange(line, $event.target.value)">
                     <option value="">（未對應，需新增品項）</option>
-                    <option v-for="item in storeItems" :key="item.code" :value="item.code">
-                      {{ item.code }} — {{ item.name }}
-                    </option>
+                    <optgroup v-for="group in groupedStoreItems" :key="group.category" :label="group.category">
+                      <option v-for="item in group.items" :key="item.code" :value="item.code">
+                        {{ item.name }}
+                      </option>
+                    </optgroup>
                   </select>
                 </td>
                 <td>
@@ -126,9 +127,26 @@
           </table>
         </div>
 
-        <button v-if="!readonly" class="secondary" style="margin-top: 12px" @click="addLine">
-          ＋ 手動新增一列（照片被遮擋或漏抓的品項）
-        </button>
+        <!-- 手動新增品項：一定要從店內既有品項清單挑選，不開放自由輸入品名，
+             避免打錯字或選到店裡根本沒有的東西（見docs/09材料主檔設計） -->
+        <div v-if="!readonly" class="add-line-area">
+          <button v-if="!showAddForm" class="secondary" @click="showAddForm = true">
+            ＋ 手動新增品項（照片被遮擋或漏抓的品項）
+          </button>
+          <div v-else class="add-line-form">
+            <select v-model="newLine.store_item_code" @change="onNewLineItemChange">
+              <option value="" disabled>選擇店內品項…</option>
+              <optgroup v-for="group in groupedStoreItems" :key="group.category" :label="group.category">
+                <option v-for="item in group.items" :key="item.code" :value="item.code">{{ item.name }}</option>
+              </optgroup>
+            </select>
+            <input type="text" class="cell-input qty" placeholder="數量" v-model="newLine.qty_raw" />
+            <input type="text" class="cell-input qty" placeholder="單位" v-model="newLine.unit_raw" />
+            <input type="text" class="cell-input qty" placeholder="單價" v-model="newLine.unit_price_raw" />
+            <button class="primary small" :disabled="!newLine.store_item_code" @click="submitNewLine">新增</button>
+            <button class="secondary small" @click="cancelAddLine">取消</button>
+          </div>
+        </div>
       </div>
 
       <div class="card">
@@ -142,7 +160,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import { api } from "../api.js";
 import ImageZoomViewer from "../components/ImageZoomViewer.vue";
 
@@ -153,8 +171,21 @@ const storeItems = ref([]);
 const loading = ref(true);
 const submitting = ref(false);
 const errorMessage = ref("");
+const showAddForm = ref(false);
+const newLine = reactive({ store_item_code: "", qty_raw: "", unit_raw: "", unit_price_raw: "" });
 
 const readonly = computed(() => receipt.value?.status === "confirmed");
+
+// 依分類分組，讓下拉選單用 <optgroup> 呈現，品項變多時還是好找、方便跟照片核對
+const groupedStoreItems = computed(() => {
+  const map = new Map();
+  for (const item of storeItems.value) {
+    const key = item.category || "其他";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(item);
+  }
+  return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
+});
 
 const lineSum = computed(() => {
   if (!receipt.value) return 0;
@@ -195,8 +226,31 @@ async function removeLine(line) {
   receipt.value = await api.deleteLine(receipt.value.id, line.id);
 }
 
-async function addLine() {
-  receipt.value = await api.addLine(receipt.value.id, { name_raw: "（新品項，請填寫）" });
+// 選了店內品項後，單位自動帶入該品項的標準單位（可再手動調整）
+function onNewLineItemChange() {
+  const item = storeItems.value.find((i) => i.code === newLine.store_item_code);
+  if (item) newLine.unit_raw = item.standard_unit;
+}
+
+async function submitNewLine() {
+  const item = storeItems.value.find((i) => i.code === newLine.store_item_code);
+  if (!item) return;
+  receipt.value = await api.addLine(receipt.value.id, {
+    name_raw: item.name,
+    store_item_code: item.code,
+    qty_raw: newLine.qty_raw || null,
+    unit_raw: newLine.unit_raw || item.standard_unit,
+    unit_price_raw: newLine.unit_price_raw || null,
+  });
+  cancelAddLine();
+}
+
+function cancelAddLine() {
+  showAddForm.value = false;
+  newLine.store_item_code = "";
+  newLine.qty_raw = "";
+  newLine.unit_raw = "";
+  newLine.unit_price_raw = "";
 }
 
 async function confirmReceipt() {
@@ -235,7 +289,7 @@ onMounted(load);
 .photo-pane {
   position: sticky;
   top: 16px;
-  width: 42%;
+  width: 38%;
   flex-shrink: 0;
   height: calc(100vh - 32px);
   padding: 0;
@@ -250,6 +304,15 @@ onMounted(load);
 .table-scroll {
   overflow-x: auto;
 }
+table {
+  min-width: 760px; /* 欄位太多時寧可整張表橫向捲動，也不要把品名欄位擠到看不清楚 */
+}
+.col-name {
+  min-width: 170px;
+}
+.col-match {
+  min-width: 190px;
+}
 .cell-input {
   width: 100%;
   min-width: 70px;
@@ -260,6 +323,9 @@ onMounted(load);
   font-family: inherit;
   font-size: inherit;
   color: inherit;
+}
+.cell-input.name {
+  min-width: 150px;
 }
 .cell-input.qty {
   width: 64px;
@@ -273,12 +339,21 @@ onMounted(load);
 .cell-input:disabled {
   color: var(--text-dim);
 }
+.vendor-code {
+  display: block;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+}
 tr.locked td {
   opacity: 0.75;
 }
 button.secondary.danger {
   color: var(--low);
   border-color: var(--low-bg);
+}
+button.small {
+  padding: 5px 10px;
+  font-size: 0.82rem;
 }
 .locked-notice {
   background: var(--mid-bg);
@@ -288,6 +363,23 @@ button.secondary.danger {
   margin-top: 10px;
   font-size: 0.85rem;
   line-height: 1.6;
+}
+.add-line-area {
+  margin-top: 12px;
+}
+.add-line-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+.add-line-form select {
+  flex: 1;
+  min-width: 180px;
 }
 
 @media (max-width: 860px) {
