@@ -2,6 +2,12 @@
 
 你問了兩件事：Claude Vision API 實際收費標準是什麼、以及有沒有更便宜的備案（包含「本地訓練」是否划算）。這份文件把答案整理成一張表，並給出明確的分層備案策略。
 
+> **定案（2026-09-03）**：往後InvoSnap的影像辨識固定沿兩條路線發展，不再視為單一路線＋一堆備案選項：
+> - **主力：LLM Vision — Claude**（見下方表格第一列）。MVP直接用、已整合進程式碼，準確度最好、開發最快。
+> - **備案／長期路線：開源自架 PaddleOCR / Tesseract + 自寫規則**（見下方表格與 [02-ocr-tech-research.md](02-ocr-tech-research.md) 方案A）。不需要GPU、不依賴外部API、長期單張成本趨近於0，但要自己為每家供應商寫版面解析規則，開發/維護成本較高。
+>
+> Haiku 4.5、Gemini Flash、自架開源VLM（Qwen2.5-VL等）三個原本列的「中間選項」保留在比較表當參考，但不再是主要規劃路線——如果Claude成本或供應商風險真的變成問題，優先評估的是「切到PaddleOCR自架」這條路，而不是在一堆雲端API之間反覆橫跳。
+
 ## 一、Claude Vision API 實際收費怎麼算
 
 Anthropic 用「視覺token」計費，不是直接按張數收費。公式（官方文件）：
@@ -40,29 +46,29 @@ Anthropic 用「視覺token」計費，不是直接按張數收費。公式（�
 
 **結論：不建議「訓練」，最多考慮「自架現成的開源模型」，而且以本案的量體，連自架都不必要——直接用API的費用低到可以忽略**（月成本US$0.4~6，比任何人的時薪都便宜太多）。
 
-## 四、建議的分層備案策略
+## 四、兩大方向的分層策略
 
 ```
-Phase 0（現在，MVP）
-  → Claude Sonnet 5（現有腳本已支援）
-      準確度優先，月成本 <US$10，可忽略
+方向A：LLM Vision — Claude（主力，現在跑的就是這個）
+  Phase A0（現在，MVP）→ Claude Sonnet 5
+      現有 scripts/claude-vision-ocr.js、backend/src/vision.js 都已支援
+      準確度優先，月成本 <US$10，可忽略，不需要改任何程式碼
 
-Phase 1（若成本變成明顯考量，或想要同廠牌容錯）
-  → 切換成 Claude Haiku 4.5
-      只改 scripts/claude-vision-ocr.js 裡的 model 參數字串即可，
+  Phase A1（若成本變成明顯考量，或想要同廠牌容錯）→ 切換成 Claude Haiku 4.5
+      只改 INVOSNAP_VISION_MODEL 環境變數或 model 參數字串即可，
       其餘程式碼、schema、prompt完全不用動
 
-Phase 2（若想要更便宜或Claude API出狀況時的備援）
-  → 加一個 Gemini 2.5 Flash 的備援分支
-      需要另外寫一個介面層抽象化「呼叫哪個vision provider」，
-      好處是不被單一供應商綁死，也對應02文件裡的多方案比較
+方向B：開源自架 PaddleOCR / Tesseract + 自寫規則（備案／長期路線）
+  Phase B0（觸發條件：Claude成本或供應商風險變成實際問題）
+      → 起手式是先用 img2table + Tesseract/PaddleOCR 對現有幾張真實單據
+        （見08）做離線小規模測試，比對辨識準確度跟方向A的差距
+      → 若準確度可接受，才進一步投入「為每家供應商寫版面解析規則」的開發
 
-Phase 3（只有在擴散到多店、單量大幅成長時才評估）
-  → 自架開源VLM（Qwen2.5-VL等）
-      需要額外的MLOps投入，本案規模不建議現在做
+（原本列的Gemini Flash、自架開源VLM如Qwen2.5-VL，保留在下方比較表當參考選項，
+  不是規劃中的路線——真的要走「不依賴Claude」的路，優先評估方向B而不是換一家雲端API）
 ```
 
-**這次不需要修改任何程式碼**——`scripts/claude-vision-ocr.js` 目前用的是Claude Sonnet 5，符合Phase 0的建議，先不用動。之後如果你明確想切到Haiku或加Gemini備援，再回來調整即可，架構上不需要重寫。
+**這次不需要修改任何程式碼**——`scripts/claude-vision-ocr.js`、`backend/src/vision.js` 目前用的是Claude Sonnet 5，符合Phase A0的建議，先不用動。方向B（PaddleOCR自架）目前也還沒有觸發條件（成本/供應商風險都還不是問題），先記錄在文件裡，真的要動工時再另外規劃。
 
 ## 五、部署順序更新
 

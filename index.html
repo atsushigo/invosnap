@@ -428,7 +428,7 @@
   </div>
 
   <div class="callout conclusion">
-    由於單日總量小（約15張/天）、供應商單據格式不一且沒有大量標註資料可訓練模型，<strong>建議 MVP 直接採用多模態 LLM Vision API（如 Claude API）做「拍照→結構化JSON」的辨識</strong>，而不是自建傳統 OCR + 版面辨識模型。成本每天不到 1 美元，開發速度最快，且對「每家格式都不同」這種小樣本場景最魯棒。之後若店家/量體擴大到多分店、高單量，再考慮導入 PaddleOCR 自架或雲端 Document AI 做客製化樣板以降低長期成本。
+    由於單日總量小（約15張/天）、供應商單據格式不一且沒有大量標註資料可訓練模型，<strong>建議 MVP 直接採用多模態 LLM Vision API（如 Claude API）做「拍照→結構化JSON」的辨識</strong>，而不是自建傳統 OCR + 版面辨識模型。成本每天不到 1 美元，開發速度最快，且對「每家格式都不同」這種小樣本場景最魯棒。<strong>影像辨識固定沿兩條路線發展（2026-09-03定案）</strong>：主力是LLM Vision — Claude；備案／長期路線是開源自架PaddleOCR/Tesseract+自寫規則，詳見「10·API費用試算與備案」。
   </div>
 
   <h2>專案完成度</h2>
@@ -633,6 +633,9 @@
   </table></div>
 
   <h2>建議</h2>
+  <div class="callout">
+    <strong>定案（2026-09-03）</strong>：往後固定沿兩條路線發展——主力是<strong>方案C LLM Vision（Claude）</strong>；備案／長期路線是<strong>方案A 開源自架（PaddleOCR/Tesseract+自寫規則）</strong>。方案B（雲端Document AI）不再列入規劃，詳見「10·API費用試算與備案」。
+  </div>
   <div class="callout conclusion">
     MVP 階段採用方案 C（LLM Vision API，例如 Claude API 的 vision 功能）。理由：本案單量小，API成本可忽略；5家供應商格式互異且可能變動，傳統OCR/自訓練模型的規則維護成本遠高於直接用LLM理解單據版面；開發時程最短，符合「總部沒資源、店長想先有可用工具」的實際需求；Node.js/Vue技術棧下，串接LLM Vision API只是一支REST呼叫，架構單純。
   </div>
@@ -1174,6 +1177,10 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
   <h1>10 · 影像辨識 API 費用試算與備案方案</h1>
   <p class="page-desc">Claude Vision API實際收費怎麼算、有沒有更便宜的備案（包含「本地訓練」是否划算）</p>
 
+  <div class="callout">
+    <strong>定案（2026-09-03）</strong>：往後影像辨識固定沿兩條路線發展——<strong>主力：LLM Vision — Claude</strong>（現在跑的就是這個）；<strong>備案／長期路線：開源自架 PaddleOCR/Tesseract + 自寫規則</strong>（不依賴外部API、長期單張成本趨近於0，但要自己為每家供應商寫版面解析規則）。Haiku 4.5、Gemini Flash、自架開源VLM保留在下方比較表當參考，不是主要規劃路線。
+  </div>
+
   <h2>一、Claude Vision API 實際收費怎麼算</h2>
   <p>Anthropic用「視覺token」計費，不是直接按張數收費。官方公式：</p>
   <pre><code>影像token數 = ⌈寬度px / 28⌉ × ⌈高度px / 28⌉
@@ -1204,14 +1211,18 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
     不建議「訓練」，最多考慮「自架現成的開源模型」——而且以本案量體，連自架都不必要，直接用API的費用低到可以忽略（月成本US$0.4~6，比任何人的時薪都便宜太多）。
   </div>
 
-  <h2>四、建議的分層備案策略</h2>
+  <h2>四、兩大方向的分層策略</h2>
+  <p><strong>方向A：LLM Vision — Claude（主力，現在跑的就是這個）</strong></p>
   <div class="flow">
-    <div class="flow-step"><div class="num">0</div><div><div class="label">Phase 0（現在，MVP）→ Claude Sonnet 5</div><div class="desc">現有腳本已支援，準確度優先，月成本&lt;US$10可忽略</div></div></div>
-    <div class="flow-step"><div class="num">1</div><div><div class="label">Phase 1（成本變考量時）→ 切換Claude Haiku 4.5</div><div class="desc">只改scripts/claude-vision-ocr.js的model參數字串，其餘完全不用動</div></div></div>
-    <div class="flow-step"><div class="num">2</div><div><div class="label">Phase 2（想要更便宜或多供應商容錯）→ 加Gemini 2.5 Flash備援</div><div class="desc">需另外寫一個介面層抽象化「呼叫哪個vision provider」</div></div></div>
-    <div class="flow-step"><div class="num">3</div><div><div class="label">Phase 3（僅擴散到多店、單量大幅成長才評估）→ 自架開源VLM</div><div class="desc">需要額外MLOps投入，本案規模不建議現在做</div></div></div>
+    <div class="flow-step"><div class="num">0</div><div><div class="label">Phase A0（現在，MVP）→ Claude Sonnet 5</div><div class="desc">scripts/claude-vision-ocr.js、backend/src/vision.js都已支援，準確度優先，月成本&lt;US$10可忽略，不需要改任何程式碼</div></div></div>
+    <div class="flow-step"><div class="num">1</div><div><div class="label">Phase A1（成本變考量時）→ 切換Claude Haiku 4.5</div><div class="desc">只改INVOSNAP_VISION_MODEL環境變數或model參數字串，其餘完全不用動</div></div></div>
   </div>
-  <p><strong>這次不需要修改任何程式碼</strong>——<code>scripts/claude-vision-ocr.js</code> 目前用Claude Sonnet 5，符合Phase 0建議，先不用動。之後想切Haiku或加Gemini備援再回來調整即可，架構上不需要重寫。</p>
+  <p style="margin-top:16px"><strong>方向B：開源自架 PaddleOCR / Tesseract + 自寫規則（備案／長期路線）</strong></p>
+  <div class="flow">
+    <div class="flow-step"><div class="num">B</div><div><div class="label">觸發條件：Claude成本或供應商風險變成實際問題</div><div class="desc">起手式先用img2table+Tesseract/PaddleOCR對現有真實單據（見08）做離線小規模測試，比對準確度差距，可接受才投入「為每家供應商寫版面解析規則」的開發</div></div></div>
+  </div>
+  <p style="font-size:0.85rem;color:var(--text-dim)">原本列的Gemini Flash、自架開源VLM（如Qwen2.5-VL）保留在上方比較表當參考選項，不是規劃中的路線——真的要走「不依賴Claude」的路，優先評估方向B而不是換一家雲端API。</p>
+  <p><strong>這次不需要修改任何程式碼</strong>——<code>scripts/claude-vision-ocr.js</code>、<code>backend/src/vision.js</code> 目前用Claude Sonnet 5，符合Phase A0建議，先不用動。方向B目前也還沒有觸發條件，先記錄在文件裡，真的要動工時再另外規劃。</p>
 
   <h2>五、部署順序更新</h2>
   <p>依補充意見，部署順序改為：<strong>先在本機/店內電腦跑通MVP，驗證整條流程沒問題後，再遷移到小型雲主機</strong>。這個順序不影響任何程式碼設計——架構本來就是「SQLite本機檔案優先」，等本機驗證穩定後，把SQLite檔案搬到雲主機上即可銜接第二階段，見已更新的「04·系統架構提案」部署建議段落。</p>

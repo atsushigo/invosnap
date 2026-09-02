@@ -47,6 +47,8 @@
 
 ## 建議
 
+> **定案（2026-09-03）**：往後固定沿兩條路線發展——**主力：方案C LLM Vision（Claude）**；**備案／長期路線：方案A 開源自架（PaddleOCR/Tesseract+自寫規則）**。方案B（雲端Document AI）不再列入規劃，理由見下方比較表與 [10-vision-api-cost-backup-plan.md](10-vision-api-cost-backup-plan.md)。
+
 **MVP 階段：採用方案 C（LLM Vision API，例如 Claude API 的 vision 功能）。**
 
 理由：

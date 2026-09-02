@@ -2,11 +2,26 @@
 
 Node.js + Express + SQLite（better-sqlite3）API，實作 [docs/03-architecture-proposal.md](../docs/03-architecture-proposal.md) 的資料模型。
 
+## 取得並設定 ANTHROPIC_API_KEY
+
+Claude Max 訂閱（claude.ai / Claude Code）**不含**這裡要用的API額度，兩個是分開計費的東西。要跑辨識功能，需要另外申請一組 Anthropic API key：
+
+1. 到 [console.anthropic.com](https://console.anthropic.com) 用你的帳號登入（跟claude.ai可以是同一組帳號，但這是「開發者主控台」，跟訂閱頁面是分開的）。
+2. 左側選單找到 **API Keys**，點 **Create Key**，取個名字（例如 `invosnap-local`），建立後**立刻複製起來**——之後就看不到完整key了。
+3. 主控台的 **Billing** 頁面加一張付款卡、儲值一點額度（幾美元就綽綽有餘，見下方成本試算，本案月成本約US$0.4~6）。
+4. 把key貼進 `backend/.env`（第一次要先 `cp .env.example .env`）：
+   ```
+   ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxxxxxx
+   ```
+5. 重新啟動後端（`npm run dev` 或 `npm start`）。啟動後呼叫 `GET /api/health` 應該會看到 `"vision_configured": true`；前端「拍照上傳」頁的橘色提醒橫幅也會消失。
+
+這組key請當密碼一樣保管，**不要**貼進git commit、Slack、聊天紀錄——`.env` 已經加進 `.gitignore`，正常操作不會不小心推上去，但複製貼上時自己也要小心。實際費用細節、有沒有更便宜的備案，見 [docs/10-vision-api-cost-backup-plan.md](../docs/10-vision-api-cost-backup-plan.md)。
+
 ## 執行
 
 ```bash
 npm install
-cp .env.example .env   # 填入你的 ANTHROPIC_API_KEY 才能真的呼叫Vision API辨識，見docs/10
+cp .env.example .env   # 填入你的 ANTHROPIC_API_KEY（見上方「取得並設定」）才能真的呼叫Vision API辨識
 npm run dev             # 或 npm start
 ```
 

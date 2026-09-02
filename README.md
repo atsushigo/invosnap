@@ -48,4 +48,6 @@ npm run dev
 
 ## 一句話結論（技術選型）
 
-由於單日總量小（約15張/天）、供應商單據格式不一且沒有大量標註資料可訓練模型，**建議 MVP 直接採用多模態 LLM Vision API（如 Claude API）做「拍照→結構化JSON」的辨識**，而不是自建傳統 OCR + 版面辨識模型。成本每天不到 1 美元，開發速度最快，且對「每家格式都不同」這種小樣本場景最魯棒。之後若店家/量體擴大到多分店、高單量，再考慮導入 PaddleOCR 自架或雲端 Document AI 做客製化樣板以降低長期成本。詳見 [02-ocr-tech-research.md](docs/02-ocr-tech-research.md)。
+由於單日總量小（約15張/天）、供應商單據格式不一且沒有大量標註資料可訓練模型，**建議 MVP 直接採用多模態 LLM Vision API（如 Claude API）做「拍照→結構化JSON」的辨識**，而不是自建傳統 OCR + 版面辨識模型。成本每天不到 1 美元，開發速度最快，且對「每家格式都不同」這種小樣本場景最魯棒。
+
+**影像辨識固定沿兩條路線發展（2026-09-03定案）**：主力是 **LLM Vision — Claude**（現在跑的就是這個）；備案／長期路線是**開源自架 PaddleOCR/Tesseract + 自寫規則**（不依賴外部API、長期單張成本趨近於0，但要自己為每家供應商寫版面解析規則）。詳見 [02-ocr-tech-research.md](docs/02-ocr-tech-research.md)、[10-vision-api-cost-backup-plan.md](docs/10-vision-api-cost-backup-plan.md)。
