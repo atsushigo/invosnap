@@ -23,6 +23,7 @@ function ensureColumn(table, column, definition) {
   }
 }
 ensureColumn("receipt_lines", "page_number", "INTEGER");
+ensureColumn("receipts", "total_pages_guess", "INTEGER");
 
 function seedIfEmpty() {
   const vendorCount = db.prepare("SELECT COUNT(*) AS n FROM vendors").get().n;

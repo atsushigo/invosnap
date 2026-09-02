@@ -34,6 +34,10 @@
         <p v-if="amountMismatch" class="error-box">
           明細加總 {{ lineSum }}，跟單據上寫的總額 {{ receipt.total_amount_on_receipt }} 對不上，請對照左側照片特別注意。
         </p>
+        <p v-if="missingPagesWarning" class="error-box">
+          系統判斷這張單據共 {{ receipt.total_pages_guess }} 頁，但目前只有 {{ receipt.photos?.length || 0 }} 張照片，
+          可能有頁面沒拍到，建議去「拍照上傳」補拍缺少的頁面重新辨識。
+        </p>
         <div v-if="receipt.notes && receipt.notes.length" class="notes-box">
           <div class="notes-title">辨識備註</div>
           <ul>
@@ -50,8 +54,22 @@
         </div>
       </div>
 
+      <!-- 這張單據內容其實來自不只一張紙本單子時，用分頁籤區分是哪一張，
+           方便一次只看單一張紙的內容去對帳（見使用者反饋：不同單子的內容要分開顯示） -->
+      <div v-if="docTabs.length > 1" class="doc-tabs card">
+        <button
+          v-for="tab in docTabs"
+          :key="tab.key"
+          :class="['doc-tab', { active: selectedDocTab === tab.key }]"
+          @click="selectDocTab(tab)"
+        >
+          {{ tab.label }}
+          <span class="doc-tab-count">{{ tab.count }}</span>
+        </button>
+      </div>
+
       <!-- 每個品項一張卡，直向排列，不需要左右滑動就能看完整內容 -->
-      <div class="line-card" v-for="line in receipt.lines" :key="line.id" :class="{ locked: readonly }">
+      <div class="line-card" v-for="line in visibleLines" :key="line.id" :class="{ locked: readonly }">
         <div class="line-card-top">
           <input
             type="text"
@@ -187,12 +205,47 @@ const errorMessage = ref("");
 const showAddForm = ref(false);
 const newLine = reactive({ store_item_code: "", qty_raw: "", unit_raw: "", unit_price_raw: "" });
 const activePage = ref(1); // 目前左側照片顯示第幾頁，可由頁籤或品項卡片上的頁碼點擊切換
+const selectedDocTab = ref("all"); // "all" 或 page_number，篩選右側只顯示某一張單子的品項
 
 const readonly = computed(() => receipt.value?.status === "confirmed");
 
 const activePhotoUrl = computed(() => {
   const photos = receipt.value?.photos || [];
   return photos.find((p) => p.page_number === activePage.value)?.url ?? photos[0]?.url ?? null;
+});
+
+// 這張單據的內容如果來自不只一張紙本單子（不同的page_number），組出「單子1／單子2／...」
+// 的分頁籤清單，讓使用者一次只看單一張紙的品項對帳，而不是全部混在一起
+const docTabs = computed(() => {
+  const lines = receipt.value?.lines || [];
+  const pageNumbers = [...new Set(lines.map((l) => l.page_number).filter((p) => p != null))].sort((a, b) => a - b);
+  if (pageNumbers.length <= 1) return [];
+  const tabs = [{ key: "all", label: "全部", count: lines.length }];
+  for (const p of pageNumbers) {
+    tabs.push({ key: p, label: `單子${p}`, count: lines.filter((l) => l.page_number === p).length, page: p });
+  }
+  const noPageCount = lines.filter((l) => l.page_number == null).length;
+  if (noPageCount > 0) tabs.push({ key: "none", label: "未分類", count: noPageCount });
+  return tabs;
+});
+
+const visibleLines = computed(() => {
+  const lines = receipt.value?.lines || [];
+  if (selectedDocTab.value === "all") return lines;
+  if (selectedDocTab.value === "none") return lines.filter((l) => l.page_number == null);
+  return lines.filter((l) => l.page_number === selectedDocTab.value);
+});
+
+function selectDocTab(tab) {
+  selectedDocTab.value = tab.key;
+  if (tab.page != null) activePage.value = tab.page; // 切換單子同時嘗試把照片切到對應頁
+}
+
+// 模型判斷單據總共幾頁，但實際上傳/記錄的照片頁數比較少，代表可能有頁面沒拍到
+const missingPagesWarning = computed(() => {
+  const total = receipt.value?.total_pages_guess;
+  const photoCount = receipt.value?.photos?.length || 0;
+  return Number.isInteger(total) && total > photoCount;
 });
 
 // 依分類分組，讓下拉選單用 <optgroup> 呈現，品項變多時還是好找、方便跟照片核對
@@ -226,6 +279,7 @@ async function load() {
   receipt.value = r;
   storeItems.value = items;
   activePage.value = 1;
+  selectedDocTab.value = "all";
   loading.value = false;
 }
 
@@ -261,6 +315,8 @@ async function submitNewLine() {
     qty_raw: newLine.qty_raw || null,
     unit_raw: newLine.unit_raw || item.standard_unit,
     unit_price_raw: newLine.unit_price_raw || null,
+    // 目前正在看哪張單子的分頁籤，新增的品項就歸類到那張，避免消失在別的分頁裡
+    page_number: typeof selectedDocTab.value === "number" ? selectedDocTab.value : null,
   });
   cancelAddLine();
 }
@@ -346,6 +402,34 @@ onMounted(load);
   padding: 8px 8px 0;
   background: var(--panel);
   flex-wrap: wrap;
+}
+.doc-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+}
+.doc-tab {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.doc-tab.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.doc-tab-count {
+  font-size: 0.72rem;
+  opacity: 0.8;
 }
 .page-tab {
   background: var(--bg);

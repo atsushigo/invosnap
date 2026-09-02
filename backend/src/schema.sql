@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS receipts (
   status TEXT NOT NULL DEFAULT 'pending_review', -- pending_review / confirmed / exported
   raw_ocr_json TEXT,
   total_amount_on_receipt TEXT,
+  total_pages_guess INTEGER, -- 模型推斷單據總共幾頁，可能大於實際上傳的照片數（代表可能漏拍）
   notes TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

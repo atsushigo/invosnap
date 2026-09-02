@@ -90,8 +90,8 @@ router.post("/recognize", upload.array("photos", 6), async (req, res) => {
     const vendorId = guessVendorId(result.vendor_name_guess);
 
     const insertReceipt = db.prepare(
-      `INSERT INTO receipts (vendor_id, vendor_name_guess, photo_filename, captured_at, date_guess, receipt_no_guess, status, raw_ocr_json, total_amount_on_receipt, notes)
-       VALUES (@vendor_id, @vendor_name_guess, @photo_filename, datetime('now'), @date_guess, @receipt_no_guess, 'pending_review', @raw_ocr_json, @total_amount_on_receipt, @notes)`
+      `INSERT INTO receipts (vendor_id, vendor_name_guess, photo_filename, captured_at, date_guess, receipt_no_guess, status, raw_ocr_json, total_amount_on_receipt, total_pages_guess, notes)
+       VALUES (@vendor_id, @vendor_name_guess, @photo_filename, datetime('now'), @date_guess, @receipt_no_guess, 'pending_review', @raw_ocr_json, @total_amount_on_receipt, @total_pages_guess, @notes)`
     );
     const info = insertReceipt.run({
       vendor_id: vendorId,
@@ -101,6 +101,7 @@ router.post("/recognize", upload.array("photos", 6), async (req, res) => {
       receipt_no_guess: result.receipt_no_guess ?? null,
       raw_ocr_json: JSON.stringify(result),
       total_amount_on_receipt: result.total_amount_on_receipt ?? null,
+      total_pages_guess: Number.isInteger(result.total_pages_guess) ? result.total_pages_guess : null,
       notes: JSON.stringify(normalizeNotes(result.notes)),
     });
     const receiptId = info.lastInsertRowid;
@@ -285,15 +286,24 @@ router.post("/:id/lines", (req, res) => {
   if (!receipt) return res.status(404).json({ error: "找不到這筆單據" });
   if (!assertEditable(receipt, res)) return;
 
-  const { name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, store_item_code } = req.body;
+  const { name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, store_item_code, page_number } = req.body;
   if (!name_raw) return res.status(400).json({ error: "手動新增的品項需要填品名" });
 
   const info = db
     .prepare(
-      `INSERT INTO receipt_lines (receipt_id, vendor_item_code, name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, matched_store_item_code_guess, store_item_code, confidence, confirmed)
-       VALUES (?, NULL, ?, ?, ?, ?, ?, NULL, ?, 'manual', 0)`
+      `INSERT INTO receipt_lines (receipt_id, vendor_item_code, name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, matched_store_item_code_guess, store_item_code, confidence, confirmed, page_number)
+       VALUES (?, NULL, ?, ?, ?, ?, ?, NULL, ?, 'manual', 0, ?)`
     )
-    .run(req.params.id, name_raw, qty_raw ?? null, unit_raw ?? null, unit_price_raw ?? null, amount_raw ?? null, store_item_code ?? null);
+    .run(
+      req.params.id,
+      name_raw,
+      qty_raw ?? null,
+      unit_raw ?? null,
+      unit_price_raw ?? null,
+      amount_raw ?? null,
+      store_item_code ?? null,
+      Number.isInteger(page_number) ? page_number : null
+    );
   res.status(201).json({ ...getReceiptWithLines(req.params.id), newLineId: info.lastInsertRowid });
 });
 
