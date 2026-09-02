@@ -1,7 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
+import sharp from "sharp";
 import { buildSystemPrompt } from "../../lib/vision-prompt.js";
 
 const MODEL = process.env.INVOSNAP_VISION_MODEL || "claude-sonnet-5";
+
+// Claude Vision的計費/理解上限約1568px長邊（超過會被自動縮小），手機拍照動輒
+// 4000px以上、好幾MB，直接送原圖除了浪費頻寬，超大檔案也可能導致API行為異常
+// （實測時遇過一張6.5MB多頁疊拍的照片，模型回傳空白內容而非JSON）。
+// 這裡統一在送出前resize+重新編碼成JPEG，長邊不超過1600px。
+const MAX_EDGE_PX = 1600;
 
 let client = null;
 function getClient() {
@@ -43,6 +50,9 @@ function friendlyVisionError(err) {
   if (err?.status === 529 || raw.includes("overloaded")) {
     return "Claude API 目前忙線中，稍等一下再試一次。";
   }
+  if (raw.includes("output truncated")) {
+    return "單據品項太多，模型輸出被截斷了，這張單據可能需要分開拍多張照片，或聯絡開發者調高輸出上限。";
+  }
   if (raw.includes("Unexpected token") || raw.includes("JSON")) {
     return "模型回傳的內容不是預期的JSON格式，可能是照片太模糊或角度太特殊，換一張照片再試試看。";
   }
@@ -60,9 +70,15 @@ export async function recognizeReceiptImage(imageBuffer, mimeType) {
   }
 
   try {
+    const resized = await sharp(imageBuffer)
+      .rotate() // 依照片EXIF方向自動轉正，避免手機直拍變橫的
+      .resize({ width: MAX_EDGE_PX, height: MAX_EDGE_PX, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+
     const response = await getClient().messages.create({
       model: MODEL,
-      max_tokens: 2048,
+      max_tokens: 8192, // 多品項/多頁單據的JSON可能很長，實測過4096仍會被截斷（見docs/08疊拍多頁的案例）
       system: buildSystemPrompt(),
       messages: [
         {
@@ -70,7 +86,7 @@ export async function recognizeReceiptImage(imageBuffer, mimeType) {
           content: [
             {
               type: "image",
-              source: { type: "base64", media_type: mimeType, data: imageBuffer.toString("base64") },
+              source: { type: "base64", media_type: "image/jpeg", data: resized.toString("base64") },
             },
             { type: "text", text: "請辨識這張送貨單，回傳符合schema的JSON。" },
           ],
@@ -78,9 +94,44 @@ export async function recognizeReceiptImage(imageBuffer, mimeType) {
       ],
     });
 
+    if (response.stop_reason === "max_tokens") {
+      console.error("模型輸出被max_tokens截斷，單據品項可能太多");
+    }
+
     const textBlock = response.content.find((block) => block.type === "text");
-    return JSON.parse(textBlock.text);
+    return parseModelJson(textBlock?.text ?? "", response.stop_reason);
   } catch (err) {
     throw new Error(friendlyVisionError(err));
   }
+}
+
+/**
+ * 模型即使被要求「只回傳JSON」，實務上仍常常包一層 ```json ... ``` 的 markdown code fence，
+ * 或前後夾雜幾句話。這裡做寬鬆解析：先試著直接parse，不行就剝掉code fence，
+ * 再不行就抓文字裡第一個 { 到最後一個 } 之間的區段試試看。
+ */
+function parseModelJson(text, stopReason) {
+  const attempts = [
+    text,
+    text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, ""),
+  ];
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    attempts.push(text.slice(firstBrace, lastBrace + 1));
+  }
+
+  for (const candidate of attempts) {
+    try {
+      return JSON.parse(candidate.trim());
+    } catch {
+      // 換下一個候選字串再試
+    }
+  }
+
+  console.error(`模型回傳內容無法解析成JSON（stop_reason=${stopReason}），原始內容長度=${text.length}：\n`, text);
+  if (stopReason === "max_tokens") {
+    throw new Error("output truncated by max_tokens");
+  }
+  throw new Error("JSON parse failed after fallback attempts");
 }
