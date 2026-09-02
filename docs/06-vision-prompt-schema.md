@@ -91,6 +91,8 @@
 - 要求嚴格JSON輸出，方便後端直接parse，不需要額外處理自然語言包裝。
 - 建議之後拿到店長供應商真實單據後，把2~3張範例（含辨識結果人工校正版）放進prompt做few-shot，能顯著提升穩定度，尤其是辨識「這家supplier的字跡習慣」。
 
+> **更新（2026-09-02）**：`scripts/claude-vision-ocr.js` 已依 [07](07-key-modules-feasibility.md) 模組一與 [09](09-store-item-master-and-vendor-mapping.md) 的真實種子資料，把 `vendor_item_code`（廠商品項編號，若有）與 `matched_store_item_code_guess`（比對到 `data/store-items.json` 的猜測，附帶生鮮業界通用簡稱表）加進schema與prompt，執行時會即時載入 `data/` 目錄的最新主檔，不用改程式碼就能反映主檔更新。
+
 ## 這類台灣手寫送貨單特有的OCR難點（給後續測試時參考）
 
 - 複寫紙字跡偏淡、部分區域幾乎看不清楚，需靠模型的「上下文推理」而非單純逐字辨識。
