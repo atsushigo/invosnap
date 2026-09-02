@@ -5,7 +5,15 @@ const MODEL = process.env.INVOSNAP_VISION_MODEL || "claude-sonnet-5";
 
 let client = null;
 function getClient() {
-  if (!client) client = new Anthropic(); // 讀取環境變數 ANTHROPIC_API_KEY
+  if (!client) {
+    // 「身分連動」型的API key（在console.anthropic.com新版介面建立的key）
+    // 需要額外帶 anthropic-workspace-id header，否則會回400
+    // invalid_request_error: anthropic-workspace-id is required
+    const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
+    client = new Anthropic({
+      defaultHeaders: workspaceId ? { "anthropic-workspace-id": workspaceId } : undefined,
+    });
+  }
   return client;
 }
 
@@ -19,6 +27,9 @@ function friendlyVisionError(err) {
   const raw = err?.message || String(err);
   if (raw.includes("Could not resolve authentication method") || raw.includes("apiKey")) {
     return "還沒設定 Anthropic API Key，無法辨識。請依 backend/README.md 的說明，在 backend/.env 填入 ANTHROPIC_API_KEY 後重新啟動後端（見 docs/10-vision-api-cost-backup-plan.md 了解費用）。";
+  }
+  if (raw.includes("anthropic-workspace-id")) {
+    return "這組是「身分連動」型API key，還需要在 backend/.env 多填一行 ANTHROPIC_WORKSPACE_ID（去 console.anthropic.com 的 Workspace 設定頁找），設定好重啟後端即可，詳見 backend/README.md。";
   }
   if (err?.status === 401 || raw.includes("invalid x-api-key") || raw.includes("authentication_error")) {
     return "API Key 無效或已過期，請確認 backend/.env 裡的 ANTHROPIC_API_KEY 是否正確。";

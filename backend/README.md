@@ -15,6 +15,8 @@ Claude Max 訂閱（claude.ai / Claude Code）**不含**這裡要用的API額度
    ```
 5. 重新啟動後端（`npm run dev` 或 `npm start`）。啟動後呼叫 `GET /api/health` 應該會看到 `"vision_configured": true`；前端「拍照上傳」頁的橘色提醒橫幅也會消失。
 
+**如果實際辨識時收到 `anthropic-workspace-id is required` 這個錯誤**：代表你在console.anthropic.com新版介面建立的是「身分連動（identity-linked）」型key，需要額外指定它屬於哪個workspace才能用。去 **Settings → Workspaces** 找到workspace ID（通常是 `wrkspc_` 開頭的字串），填進 `backend/.env` 的 `ANTHROPIC_WORKSPACE_ID`，重啟後端即可。
+
 這組key請當密碼一樣保管，**不要**貼進git commit、Slack、聊天紀錄——`.env` 已經加進 `.gitignore`，正常操作不會不小心推上去，但複製貼上時自己也要小心。實際費用細節、有沒有更便宜的備案，見 [docs/10-vision-api-cost-backup-plan.md](../docs/10-vision-api-cost-backup-plan.md)。
 
 ## 執行
