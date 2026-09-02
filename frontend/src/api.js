@@ -13,8 +13,49 @@ export const api = {
   getHealth: () => fetch(`${BASE}/health`).then(handle),
 
   getVendors: () => fetch(`${BASE}/catalog/vendors`).then(handle),
+  createVendor: (vendor) =>
+    fetch(`${BASE}/catalog/vendors`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(vendor),
+    }).then(handle),
+  updateVendor: (id, patch) =>
+    fetch(`${BASE}/catalog/vendors/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then(handle),
+  deleteVendor: (id) => fetch(`${BASE}/catalog/vendors/${id}`, { method: "DELETE" }).then(handle),
+
   getStoreItems: () => fetch(`${BASE}/catalog/store-items`).then(handle),
+  createStoreItem: (item) =>
+    fetch(`${BASE}/catalog/store-items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item),
+    }).then(handle),
+  updateStoreItem: (code, patch) =>
+    fetch(`${BASE}/catalog/store-items/${code}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then(handle),
+  deleteStoreItem: (code) => fetch(`${BASE}/catalog/store-items/${code}`, { method: "DELETE" }).then(handle),
+
   getMappings: () => fetch(`${BASE}/catalog/mappings`).then(handle),
+  createMapping: (mapping) =>
+    fetch(`${BASE}/catalog/mappings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(mapping),
+    }).then(handle),
+  updateMapping: (id, patch) =>
+    fetch(`${BASE}/catalog/mappings/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then(handle),
+  deleteMapping: (id) => fetch(`${BASE}/catalog/mappings/${id}`, { method: "DELETE" }).then(handle),
 
   getReceipts: () => fetch(`${BASE}/receipts`).then(handle),
   getReceipt: (id) => fetch(`${BASE}/receipts/${id}`).then(handle),
