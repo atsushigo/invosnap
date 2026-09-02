@@ -387,9 +387,9 @@
     <div class="sub">供應商紙本進貨單 → POS建檔自動化</div>
     <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
       <div style="flex:1;height:6px;border-radius:999px;background:var(--table-head);overflow:hidden;">
-        <div style="height:100%;width:53%;border-radius:999px;background:linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);"></div>
+        <div style="height:100%;width:62%;border-radius:999px;background:linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);"></div>
       </div>
-      <span style="font-size:0.72rem;color:var(--text-dim);font-weight:700;white-space:nowrap;">53% 完成</span>
+      <span style="font-size:0.72rem;color:var(--text-dim);font-weight:700;white-space:nowrap;">62% 完成</span>
     </div>
   </div>
   <ul class="navlist" id="navlist">
@@ -405,6 +405,7 @@
     <li><button data-page="p9"><span class="idx">09</span><span>材料主檔與廠商對照</span></button></li>
     <li><button data-page="p10"><span class="idx">10</span><span>API費用試算與備案</span></button></li>
     <li><button data-page="p11"><span class="idx">11</span><span>待你Review清單</span></button></li>
+    <li><button data-page="p12"><span class="idx">12</span><span>專案現況與交接筆記</span></button></li>
   </ul>
 </nav>
 
@@ -435,13 +436,13 @@
   <div class="progress-card">
     <div class="progress-head">
       <div class="ptitle">整體完成度</div>
-      <div class="pmeta">最後更新：2026-09-02</div>
+      <div class="pmeta">最後更新：2026-09-03</div>
     </div>
     <div class="progress-total">
-      <div class="pct" id="overallPct">53%</div>
-      <div class="track"><div class="fill" id="overallFill" style="width:53%"></div></div>
+      <div class="pct" id="overallPct">62%</div>
+      <div class="track"><div class="fill" id="overallFill" style="width:62%"></div></div>
     </div>
-    <div class="progress-def">100% 的定義：整個工具（拍照上傳、辨識、供應商對照/單位換算、覆核確認、匯出）完成開發與實測，可以正式提交給川醉湘店長與門市人員上線使用。本機MVP第一版（Node.js後端+Vue前端+SQLite）已完成並用Playwright自動化測試17項全過（拍照辨識本身因為要花錢未實測，其餘全部驗證），尚未部署到雲端、也還沒讓店長實際試用。</div>
+    <div class="progress-def">100% 的定義：整個工具（拍照上傳、辨識、供應商對照/單位換算、覆核確認、匯出）完成開發與實測，可以正式提交給川醉湘店長與門市人員上線使用。本機MVP已完成拍照上傳（支援多頁）、卡片式覆核頁（行內編輯/單子分頁籤/縮放對照照片）、確認入帳、整筆刪除單據、CSV匯出，並用2張真實供應商單據測過真實Claude Vision辨識且成功，Playwright測試腳本已存進repo可重複執行。尚未部署到雲端、也還沒讓店長實際試用。</div>
 
     <div class="phase-list" id="phaseList">
       <div class="phase-row">
@@ -465,14 +466,14 @@
       <div class="phase-row">
         <div class="pname">前端開發（拍照上傳／覆核UI，Vue）</div>
         <div class="pweight">權重 15%</div>
-        <div class="ptrack"><div class="pfill" style="width:55%"></div></div>
-        <div class="pval"><span class="badge mid">55%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:75%"></div></div>
+        <div class="pval"><span class="badge mid">75%</span></div>
       </div>
       <div class="phase-row">
         <div class="pname">後端開發（API／辨識串接／資料庫，Node.js）</div>
         <div class="pweight">權重 20%</div>
-        <div class="ptrack"><div class="pfill" style="width:60%"></div></div>
-        <div class="pval"><span class="badge mid">60%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:80%"></div></div>
+        <div class="pval"><span class="badge mid">80%</span></div>
       </div>
       <div class="phase-row">
         <div class="pname">供應商對照表與單位換算邏輯</div>
@@ -483,8 +484,8 @@
       <div class="phase-row">
         <div class="pname">實測驗證（真實單據小規模測試）</div>
         <div class="pweight">權重 10%</div>
-        <div class="ptrack"><div class="pfill" style="width:25%"></div></div>
-        <div class="pval"><span class="badge mid">25%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:40%"></div></div>
+        <div class="pval"><span class="badge mid">40%</span></div>
       </div>
       <div class="phase-row">
         <div class="pname">店內試營運與正式交付</div>
@@ -516,6 +517,7 @@
     <li>09 — 川醉湘店內材料主檔與各廠商映射對照：依真實單據建立的種子資料</li>
     <li>10 — 影像辨識API費用試算與備案方案：系統化比較表與分層策略</li>
     <li>11 — 待你Review的事項清單：目前卡點總盤點，含Hetzner部署風險提醒</li>
+    <li>12 — 專案現況與交接筆記：對話上下文快滿/接續新session先看這篇</li>
   </ul>
 </section>
 
@@ -1295,6 +1297,55 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
 
   <div class="footer-nav">
     <button data-page="p10">← API費用試算與備案</button>
+    <button data-page="p12">下一篇：專案現況與交接筆記 →</button>
+  </div>
+</section>
+
+<!-- P12 專案現況與交接筆記 -->
+<section class="page" id="p12">
+  <h1>12 · 專案現況與交接筆記</h1>
+  <p class="page-desc">對話上下文快滿時寫的，給之後接續對話/新session用的「先看這篇」文件（2026-09-03）</p>
+
+  <div class="callout conclusion">
+    本機MVP已經可以跑，涵蓋「拍照上傳（支援多頁）→ Claude Vision辨識 → 覆核頁（卡片版型、行內編輯、單子分頁籤）→ 確認入帳 → CSV匯出」完整流程，已用2張真實供應商單據測過真實辨識且成功。程式碼、種子資料、文件都在GitHub私有repo：<code>github.com/atsushigo/invosnap</code>（分支main）。
+  </div>
+
+  <h2>怎麼啟動本機環境</h2>
+  <pre><code>cd ~/Desktop/invosnap/backend && npm install && npm run dev   # 需要backend/.env設定ANTHROPIC_API_KEY（可能還要ANTHROPIC_WORKSPACE_ID，見backend/README.md）
+cd ~/Desktop/invosnap/frontend && npm install && npm run dev  # 預設想用5173，通常被占用會改用5174</code></pre>
+  <p>前端會透過vite.config.js的proxy把 <code>/api</code> 和 <code>/uploads</code> 轉給後端(localhost:3001)。想讓別人（例如店長）用手機看，可以用 <code>cloudflared tunnel --url http://localhost:5174</code> 開一個臨時公開網址（之前用過的網址是暫時的，session結束會失效，需要重新產生）。</p>
+
+  <h2>已完成的功能（程式碼層面）</h2>
+  <p><strong>後端</strong>（<code>backend/src/</code>）：拍照辨識(<code>POST /recognize</code>，支援多檔=多頁)、單據列表/詳情、覆核修正(可訂正原始欄位)、刪除單一列、手動新增列、確認入帳、重新開放編輯、<strong>整筆刪除單據</strong>(含照片檔案)；Vision呼叫含sharp resize、多圖一次呼叫、寬鬆JSON解析、截斷偵測、中文化錯誤訊息；SQLite自動建表+種子資料+簡易欄位遷移。</p>
+  <p><strong>前端</strong>（<code>frontend/src/</code>）：上傳頁支援一次選多張照片（同一單據不同頁）；覆核頁左右分割（左：照片縮放/全螢幕；右：卡片式品項，行內編輯，「全部／單子1／單子2／單子3」分頁籤區分同一照片裡的不同紙本單子，已確認鎖定+重新開放編輯修正流程，手動新增品項強制從店內清單挑選）；單據列表含刪除按鈕。</p>
+
+  <h2>目前的真實資料狀態</h2>
+  <p>DB裡目前有2筆真實辨識過的單據，使用者打算清掉這兩筆測試資料、重新拍照上傳，用最新版系統重新走一次完整流程。清掉方式：<code>/receipts</code>列表頁按「刪除」（已確認狀態要先在覆核頁「重新開放編輯」才能刪）。</p>
+
+  <h2>費用與環境設定重點</h2>
+  <ul>
+    <li>Claude Max訂閱<strong>不含</strong>Anthropic API額度，需另外在console.anthropic.com申請API key、儲值</li>
+    <li>使用者的key是「身分連動」型，需要額外在<code>backend/.env</code>填<code>ANTHROPIC_WORKSPACE_ID</code></li>
+    <li>本案單量下每次辨識約US$0.01~0.03，見docs/10</li>
+    <li><strong>重要工作習慣</strong>：使用者明確要求「不要濫用額度，先分析調查後再使用」——花真的API費用前先用免費方式驗證邏輯，只在必要時才花一次真的辨識去確認</li>
+  </ul>
+
+  <h2>測試方法論</h2>
+  <div class="callout">
+    <strong>每次改完程式碼，要自己用Playwright驗證過、確認沒問題才報告完成</strong>，不要丟未測過的東西給使用者。測試腳本已經搬進repo的 <code>tests/playwright/</code>（原本放在session暫存目錄，session結束會消失），未來session可以直接重跑或參考寫法。跑法見 <code>tests/playwright/README.md</code>：需要先seed假資料、對照更新測試檔案裡的receipt id常數。
+  </div>
+
+  <h2>還沒解決的事情</h2>
+  <ol>
+    <li><strong>POS系統是否支援匯入、匯入格式</strong>——完全未知，目前只做好內部標準格式CSV匯出，跟POS解耦</li>
+    <li><strong>供應商單據範例</strong>——只驗證過2家供應商的3張真實單據，店長最多有5家供應商</li>
+    <li><strong>09文件列的5筆needs_confirmation品項</strong>——需要問店長</li>
+    <li><strong>Hetzner雲端部署</strong>——之後再議，已知判斷：不要跟trading-monorepo正式機共用</li>
+    <li><strong>多頁單子的doc-tabs功能還沒用真實多頁資料測過</strong>——目前只用假資料驗證UI邏輯，等使用者重新上傳才能看到真正效果</li>
+  </ol>
+
+  <div class="footer-nav">
+    <button data-page="p11">← 待你Review清單</button>
     <button data-page="p0">回到總覽 →</button>
   </div>
 </section>
