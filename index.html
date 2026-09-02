@@ -387,9 +387,9 @@
     <div class="sub">供應商紙本進貨單 → POS建檔自動化</div>
     <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
       <div style="flex:1;height:6px;border-radius:999px;background:var(--table-head);overflow:hidden;">
-        <div style="height:100%;width:33%;border-radius:999px;background:linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);"></div>
+        <div style="height:100%;width:53%;border-radius:999px;background:linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);"></div>
       </div>
-      <span style="font-size:0.72rem;color:var(--text-dim);font-weight:700;white-space:nowrap;">33% 完成</span>
+      <span style="font-size:0.72rem;color:var(--text-dim);font-weight:700;white-space:nowrap;">53% 完成</span>
     </div>
   </div>
   <ul class="navlist" id="navlist">
@@ -438,10 +438,10 @@
       <div class="pmeta">最後更新：2026-09-02</div>
     </div>
     <div class="progress-total">
-      <div class="pct" id="overallPct">33%</div>
-      <div class="track"><div class="fill" id="overallFill" style="width:33%"></div></div>
+      <div class="pct" id="overallPct">53%</div>
+      <div class="track"><div class="fill" id="overallFill" style="width:53%"></div></div>
     </div>
-    <div class="progress-def">100% 的定義：整個工具（拍照上傳、辨識、供應商對照/單位換算、覆核確認、匯出）完成開發與實測，可以正式提交給川醉湘店長與門市人員上線使用。目前完成「需求釐清＋技術調查與選型」，已用3張真實單據做過零成本辨識初步驗證（見08），並依真實資料建好初版材料主檔與廠商對照種子資料（見09），尚未開始寫程式。</div>
+    <div class="progress-def">100% 的定義：整個工具（拍照上傳、辨識、供應商對照/單位換算、覆核確認、匯出）完成開發與實測，可以正式提交給川醉湘店長與門市人員上線使用。本機MVP第一版（Node.js後端+Vue前端+SQLite）已完成並用Playwright自動化測試17項全過（拍照辨識本身因為要花錢未實測，其餘全部驗證），尚未部署到雲端、也還沒讓店長實際試用。</div>
 
     <div class="phase-list" id="phaseList">
       <div class="phase-row">
@@ -465,14 +465,14 @@
       <div class="phase-row">
         <div class="pname">前端開發（拍照上傳／覆核UI，Vue）</div>
         <div class="pweight">權重 15%</div>
-        <div class="ptrack"><div class="pfill" style="width:0%"></div></div>
-        <div class="pval"><span class="badge todo">0%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:55%"></div></div>
+        <div class="pval"><span class="badge mid">55%</span></div>
       </div>
       <div class="phase-row">
         <div class="pname">後端開發（API／辨識串接／資料庫，Node.js）</div>
         <div class="pweight">權重 20%</div>
-        <div class="ptrack"><div class="pfill" style="width:0%"></div></div>
-        <div class="pval"><span class="badge todo">0%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:60%"></div></div>
+        <div class="pval"><span class="badge mid">60%</span></div>
       </div>
       <div class="phase-row">
         <div class="pname">供應商對照表與單位換算邏輯</div>
@@ -831,13 +831,16 @@ ReceiptLine（單據明細列，一張Receipt對多筆）
   <h1>05 · MVP 路線圖與待確認事項</h1>
   <p class="page-desc">第一版做到哪，以及需要與店長確認的關鍵資訊</p>
 
+  <div class="callout">
+    更新（2026-09-02）：以下1~5項已在本機完成第一版實作並用Playwright自動化測試通過，見根目錄README「快速開始」。拍照辨識本身因為要花真的API費用而未實測，其餘（覆核、對照、確認入帳、CSV匯出）已全部驗證。
+  </div>
   <h2>MVP 範圍建議</h2>
   <ol>
-    <li>Vue拍照上傳頁（單張照片上傳）。</li>
-    <li>Node.js後端呼叫LLM Vision API，回傳結構化品項清單。</li>
-    <li>基本供應商/品項對照表（先手動建幾家常用供應商與品項，不求一開始就自動比對完美）。</li>
-    <li>覆核頁：店長可修改辨識結果、指定/新增品項對照、確認換算後數量正確。</li>
-    <li>確認後存入SQLite，並可匯出當日/當週CSV。</li>
+    <li>Vue拍照上傳頁（單張照片上傳）。<span class="badge good">已實作</span></li>
+    <li>Node.js後端呼叫LLM Vision API，回傳結構化品項清單。<span class="badge good">已實作</span></li>
+    <li>基本供應商/品項對照表（先手動建幾家常用供應商與品項，不求一開始就自動比對完美）。<span class="badge good">已實作</span></li>
+    <li>覆核頁：店長可修改辨識結果、指定/新增品項對照、確認換算後數量正確。<span class="badge good">已實作</span></li>
+    <li>確認後存入SQLite，並可匯出當日/當週CSV。<span class="badge good">已實作</span></li>
   </ol>
 
   <h3>先不做（等MVP驗證可用後再排）</h3>
@@ -1261,14 +1264,22 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
     <li>費用備案分層策略：Sonnet 5 → Haiku 4.5 → Gemini Flash → 自架開源模型</li>
   </ul>
 
-  <h2>四、現在可以開始寫程式嗎</h2>
-  <p><strong>可以</strong>，只要你對「一、雲端部署」的建議沒意見。程式碼開發（Node.js後端＋Vue前端＋SQLite）完全不受POS問題影響，可以先在本機動工；等你確認要開新Hetzner機器或有其他意見，再調整部署那一段。</p>
+  <h2>四、本機MVP已完成第一版並測試通過（2026-09-02更新）</h2>
+  <p>依「先本地部署，之後平移到Hetzner」的指示，已經把MVP骨架做出來並測過一輪：</p>
+  <ul>
+    <li><strong>後端</strong>（<code>backend/</code>）：Node.js + Express + SQLite，實作了「03·系統架構提案」的資料模型，啟動時自動載入<code>data/</code>種子資料。API涵蓋拍照辨識、單據列表/詳情、覆核修正、確認入帳、CSV匯出。</li>
+    <li><strong>前端</strong>（<code>frontend/</code>）：Vue 3 + Vite，三頁（拍照上傳／單據列表／覆核頁），覆核頁有信心度標記、品項對應下拉選單、明細金額跟單據總額對不上時的警示。</li>
+    <li><strong>測試方式</strong>：後端用curl測過完整流程（列表→覆核修正→確認入帳的409/200狀態轉換→CSV匯出，中文正確顯示）；前端用Playwright寫了一支17項檢查的自動化測試腳本，涵蓋頁面導覽、下拉選單互動、checkbox勾選、確認入帳的成功/失敗分支、重新整理後資料有沒有真的持久化——<strong>17項全部通過</strong>，瀏覽器也沒有非預期的console錯誤。</li>
+    <li><strong>唯一沒測到的部分</strong>：實際呼叫Claude Vision API辨識這件事本身——因為要花真的API費用，遵照「盡量不要花錢」的指示沒有執行；已驗證的是這支API在沒有API key時會回傳清楚的502錯誤而不會讓伺服器崩潰。等想正式測，填好<code>backend/.env</code>的<code>ANTHROPIC_API_KEY</code>就能跑。</li>
+  </ul>
 
   <h2>五、下一步建議順序</h2>
   <ol>
-    <li>確認「開新Hetzner機器」這個判斷有沒有問題（或有更了解那台trading機器現況的資訊）</li>
-    <li>開始搭建本機MVP骨架（Node.js + Vue + SQLite），把已有的種子資料（data/）接進去</li>
-    <li>之後有空，去跟店長要剩下1~2家供應商的單據範例、順便問一下09列出的5筆待確認品項、以及POS匯入方式</li>
+    <li>本機MVP骨架已完成（見上方第四點）</li>
+    <li>實際用本機跑起來玩玩看，感受拍照→覆核→確認入帳的流程順不順，有沒有UI/流程上想調整的地方</li>
+    <li>要正式測辨識，填<code>backend/.env</code>的API key（會產生小額費用，見「10·API費用試算與備案」）</li>
+    <li>有空時，去跟店長要剩下1~2家供應商的單據範例、順便問一下09列出的5筆待確認品項、以及POS匯入方式</li>
+    <li>之後確認上雲時機，再依Hetzner後續安排調整部署（見上方第一點，之後再議）</li>
   </ol>
 
   <div class="footer-nav">

@@ -1,12 +1,14 @@
 # 04. MVP 路線圖與待確認事項
 
+> **更新（2026-09-02）**：以下1~5項已在本機完成第一版實作並用Playwright自動化測試通過，見 [backend/](../backend)、[frontend/](../frontend) 與根目錄README「快速開始」。拍照辨識本身因為要花真的API費用而未實測，其餘（覆核、對照、確認入帳、CSV匯出）已全部驗證。
+
 ## MVP 範圍建議（第一版做到哪）
 
-1. Vue 拍照上傳頁（單張照片上傳）。
-2. Node.js 後端呼叫 LLM Vision API，回傳結構化品項清單。
-3. 基本供應商/品項對照表（先手動建幾家常用供應商與品項，不求一開始就自動比對完美）。
-4. 覆核頁：店長可修改辨識結果、指定/新增品項對照、確認換算後數量正確。
-5. 確認後存入 SQLite，並可匯出當日/當週 CSV。
+1. Vue 拍照上傳頁（單張照片上傳）。✅ 已實作（`frontend/src/views/UploadView.vue`）
+2. Node.js 後端呼叫 LLM Vision API，回傳結構化品項清單。✅ 已實作（`backend/src/vision.js` + `POST /api/receipts/recognize`）
+3. 基本供應商/品項對照表（先手動建幾家常用供應商與品項，不求一開始就自動比對完美）。✅ 已實作，種子資料見 [09](09-store-item-master-and-vendor-mapping.md)
+4. 覆核頁：店長可修改辨識結果、指定/新增品項對照、確認換算後數量正確。✅ 已實作（`frontend/src/views/ReviewView.vue`），含信心度標記與明細金額對總額的落差警示
+5. 確認後存入 SQLite，並可匯出當日/當週 CSV。✅ 已實作（`GET /api/receipts/export/csv`，內部標準格式見07模組四）
 
 **先不做**（等MVP驗證可用後再排）：
 - 多張連續拍照/批次處理

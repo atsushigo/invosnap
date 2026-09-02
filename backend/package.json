@@ -1,0 +1,19 @@
+{
+  "name": "invosnap-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "InvoSnap 後端 API：拍照辨識、供應商對照、覆核確認、匯出（見 docs/03-architecture-proposal.md）",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --env-file-if-exists=.env --watch src/server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "better-sqlite3": "^11.3.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "multer": "^2.0.0"
+  }
+}

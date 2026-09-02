@@ -25,6 +25,23 @@ InvoSnap 是一個獨立於總部POS之外的輔助小工具：手機拍照 → 
 
 也可以直接開啟 `index.html`（分頁式整合版，含全部內容，適合快速瀏覽全貌）。
 
+## 快速開始（本機MVP）
+
+```bash
+# 後端
+cd backend
+npm install
+cp .env.example .env   # 填入你的 ANTHROPIC_API_KEY 才能真的辨識，見 docs/10
+npm run dev
+
+# 前端（另開一個終端機）
+cd frontend
+npm install
+npm run dev
+```
+
+功能涵蓋：拍照上傳 → Vision API辨識 → 覆核頁（指定店內品項、標記信心度、確認入帳）→ 匯出CSV。詳見 [backend/README.md](backend/README.md)、[frontend/README.md](frontend/README.md)。核心API與前端UI已用Playwright自動化測試過一輪（拍照辨識本身因為要花真的API費用而跳過，其餘流程全部驗證過）。
+
 ## 驗證用腳本（尚未執行，需自備API key才會產生費用）
 
 `scripts/claude-vision-ocr.js` 是依 [06](docs/06-vision-prompt-schema.md) 的 schema 設計、呼叫 Claude API 辨識送貨單照片的骨架腳本。Claude Max 訂閱額度不含 Anthropic API 用量，實際跑這支腳本才會依API用量計費（每張約US$0.01~0.015）。若想先零成本驗證辨識可行性，可直接把單據照片提供給對話中的 Claude 做示範辨識。

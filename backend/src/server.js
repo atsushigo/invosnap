@@ -1,0 +1,21 @@
+import express from "express";
+import cors from "cors";
+import "./db.js"; // 啟動時建表+載入種子資料
+import catalogRouter from "./routes/catalog.js";
+import receiptsRouter from "./routes/receipts.js";
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.get("/api/health", (req, res) => res.json({ ok: true }));
+app.use("/api/catalog", catalogRouter);
+app.use("/api/receipts", receiptsRouter);
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: "伺服器錯誤" });
+});
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`InvoSnap backend listening on http://localhost:${PORT}`));
