@@ -2,7 +2,8 @@
   <div class="card">
     <h2>拍照上傳送貨單</h2>
     <p style="color: var(--text-dim); font-size: 0.9rem">
-      選一張供應商送貨單照片，系統會用Claude Vision辨識成結構化資料，辨識完會帶你到覆核頁確認。
+      選一或多張供應商送貨單照片（同一張單據不只一頁的話，依頁面順序一次全選），
+      系統會用Claude Vision辨識成結構化資料，辨識完會帶你到覆核頁確認。
     </p>
 
     <div v-if="visionConfigured === false" class="setup-notice">
@@ -16,19 +17,28 @@
       type="file"
       accept="image/jpeg,image/png,image/webp"
       capture="environment"
+      multiple
       @change="onFileChange"
     />
 
-    <div v-if="previewUrl" style="margin-top: 12px">
-      <img :src="previewUrl" alt="預覽" style="max-width: 260px; border-radius: 8px; border: 1px solid var(--border)" />
-      <p style="font-size: 0.82rem; color: var(--text-dim); margin: 6px 0 0">{{ selectedFile.name }}</p>
+    <div v-if="pages.length" class="page-list">
+      <div v-for="(page, i) in pages" :key="page.url" class="page-thumb">
+        <span class="page-index">第{{ i + 1 }}頁</span>
+        <img :src="page.url" alt="預覽" />
+        <p class="page-filename">{{ page.file.name }}</p>
+        <div class="page-actions">
+          <button class="secondary small" :disabled="i === 0" @click="movePage(i, -1)">←</button>
+          <button class="secondary small" :disabled="i === pages.length - 1" @click="movePage(i, 1)">→</button>
+          <button class="secondary danger small" @click="removePage(i)">移除</button>
+        </div>
+      </div>
     </div>
 
     <div style="margin-top: 16px; display: flex; align-items: center; gap: 12px">
-      <button class="primary" :disabled="!selectedFile || loading" @click="submit">
-        {{ loading ? "辨識中…（可能需要幾秒到十幾秒）" : "開始辨識" }}
+      <button class="primary" :disabled="!pages.length || loading" @click="submit">
+        {{ loading ? "辨識中…（可能需要幾秒到十幾秒）" : `開始辨識${pages.length > 1 ? `（共${pages.length}頁）` : ""}` }}
       </button>
-      <button v-if="selectedFile && !loading" class="secondary" @click="reset">重選照片</button>
+      <button v-if="pages.length && !loading" class="secondary" @click="reset">全部重選</button>
     </div>
 
     <p v-if="errorMessage" class="error-box">{{ errorMessage }}</p>
@@ -42,32 +52,41 @@ import { api } from "../api.js";
 
 const router = useRouter();
 const fileInput = ref(null);
-const selectedFile = ref(null);
-const previewUrl = ref(null);
+const pages = ref([]); // [{ file, url }]，依頁面順序排列
 const loading = ref(false);
 const errorMessage = ref("");
 const visionConfigured = ref(null); // null=尚未查到，避免畫面一開始就閃一個「未設定」再消失
 
 function onFileChange(event) {
-  const file = event.target.files?.[0];
+  const files = Array.from(event.target.files || []);
   errorMessage.value = "";
-  selectedFile.value = file || null;
-  previewUrl.value = file ? URL.createObjectURL(file) : null;
+  pages.value = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
+}
+
+function movePage(index, delta) {
+  const target = index + delta;
+  if (target < 0 || target >= pages.value.length) return;
+  const arr = [...pages.value];
+  [arr[index], arr[target]] = [arr[target], arr[index]];
+  pages.value = arr;
+}
+
+function removePage(index) {
+  pages.value = pages.value.filter((_, i) => i !== index);
 }
 
 function reset() {
-  selectedFile.value = null;
-  previewUrl.value = null;
+  pages.value = [];
   errorMessage.value = "";
   if (fileInput.value) fileInput.value.value = "";
 }
 
 async function submit() {
-  if (!selectedFile.value) return;
+  if (!pages.value.length) return;
   loading.value = true;
   errorMessage.value = "";
   try {
-    const receipt = await api.recognizeReceipt(selectedFile.value);
+    const receipt = await api.recognizeReceipt(pages.value.map((p) => p.file));
     router.push({ name: "review", params: { id: receipt.id } });
   } catch (err) {
     errorMessage.value = err.message;
@@ -101,5 +120,52 @@ onMounted(async () => {
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 0.85em;
+}
+.page-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+.page-thumb {
+  width: 150px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+.page-thumb img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.page-index {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.page-filename {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.page-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+button.small {
+  padding: 3px 7px;
+  font-size: 0.75rem;
+}
+button.secondary.danger {
+  color: var(--low);
+  border-color: var(--low-bg);
 }
 </style>

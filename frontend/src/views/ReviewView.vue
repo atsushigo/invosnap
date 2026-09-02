@@ -2,9 +2,19 @@
   <div v-if="loading" class="card">載入中…</div>
   <div v-else-if="!receipt" class="card">找不到這筆單據。</div>
   <div v-else class="split">
-    <!-- 左：原始照片，供對照核實 -->
+    <!-- 左：原始照片，供對照核實。單據不只一頁時上面會有分頁籤可以切換 -->
     <div class="photo-pane card">
-      <ImageZoomViewer v-if="receipt.photo_url" :src="receipt.photo_url" />
+      <div v-if="receipt.photos && receipt.photos.length > 1" class="page-tabs">
+        <button
+          v-for="p in receipt.photos"
+          :key="p.page_number"
+          :class="['page-tab', { active: activePage === p.page_number }]"
+          @click="activePage = p.page_number"
+        >
+          第{{ p.page_number }}頁
+        </button>
+      </div>
+      <ImageZoomViewer v-if="activePhotoUrl" :key="activePhotoUrl" :src="activePhotoUrl" />
       <p v-else style="color: var(--text-dim); text-align: center; padding: 40px 0">
         這筆單據沒有留存原始照片（測試資料）
       </p>
@@ -40,98 +50,96 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th class="col-name">原始品名</th>
-                <th>數量</th>
-                <th>單位</th>
-                <th>單價</th>
-                <th>金額</th>
-                <th>信心</th>
-                <th class="col-match">對應店內品項</th>
-                <th>已確認</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="line in receipt.lines" :key="line.id" :class="{ locked: readonly }">
-                <td class="col-name">
-                  <input
-                    type="text"
-                    class="cell-input name"
-                    :value="line.name_raw"
-                    :title="line.name_raw"
-                    :disabled="readonly"
-                    @change="onFieldChange(line, 'name_raw', $event.target.value)"
-                  />
-                  <span v-if="line.vendor_item_code" class="vendor-code">({{ line.vendor_item_code }})</span>
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    class="cell-input qty"
-                    :value="line.qty_raw"
-                    :disabled="readonly"
-                    @change="onFieldChange(line, 'qty_raw', $event.target.value)"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    class="cell-input qty"
-                    :value="line.unit_raw"
-                    :disabled="readonly"
-                    @change="onFieldChange(line, 'unit_raw', $event.target.value)"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    class="cell-input qty"
-                    :value="line.unit_price_raw"
-                    :disabled="readonly"
-                    @change="onFieldChange(line, 'unit_price_raw', $event.target.value)"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    class="cell-input qty"
-                    :value="line.amount_raw"
-                    :disabled="readonly"
-                    @change="onFieldChange(line, 'amount_raw', $event.target.value)"
-                  />
-                </td>
-                <td><span :class="['badge', line.confidence]">{{ confidenceLabel(line.confidence) }}</span></td>
-                <td class="col-match">
-                  <select :value="line.store_item_code || ''" :disabled="readonly" @change="onStoreItemChange(line, $event.target.value)">
-                    <option value="">（未對應，需新增品項）</option>
-                    <optgroup v-for="group in groupedStoreItems" :key="group.category" :label="group.category">
-                      <option v-for="item in group.items" :key="item.code" :value="item.code">
-                        {{ item.name }}
-                      </option>
-                    </optgroup>
-                  </select>
-                </td>
-                <td>
-                  <input
-                    type="checkbox"
-                    :checked="!!line.confirmed"
-                    :disabled="readonly"
-                    @change="onConfirmChange(line, $event.target.checked)"
-                  />
-                </td>
-                <td>
-                  <button v-if="!readonly" class="secondary danger" title="這一列是誤判，刪掉" @click="removeLine(line)">刪除</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <!-- 每個品項一張卡，直向排列，不需要左右滑動就能看完整內容 -->
+      <div class="line-card" v-for="line in receipt.lines" :key="line.id" :class="{ locked: readonly }">
+        <div class="line-card-top">
+          <input
+            type="text"
+            class="cell-input name"
+            :value="line.name_raw"
+            :title="line.name_raw"
+            :disabled="readonly"
+            @change="onFieldChange(line, 'name_raw', $event.target.value)"
+          />
+          <span :class="['badge', line.confidence]">{{ confidenceLabel(line.confidence) }}</span>
+          <button
+            v-if="receipt.photos && receipt.photos.length > 1 && line.page_number"
+            class="page-badge"
+            :class="{ active: activePage === line.page_number }"
+            title="點一下切換左側照片到這一頁"
+            @click="activePage = line.page_number"
+          >
+            第{{ line.page_number }}頁
+          </button>
+        </div>
+        <div v-if="line.vendor_item_code" class="vendor-code">廠商編號：{{ line.vendor_item_code }}</div>
+
+        <div class="line-card-fields">
+          <label class="field">
+            <span>數量</span>
+            <input
+              type="text"
+              class="cell-input qty"
+              :value="line.qty_raw"
+              :disabled="readonly"
+              @change="onFieldChange(line, 'qty_raw', $event.target.value)"
+            />
+          </label>
+          <label class="field">
+            <span>單位</span>
+            <input
+              type="text"
+              class="cell-input qty"
+              :value="line.unit_raw"
+              :disabled="readonly"
+              @change="onFieldChange(line, 'unit_raw', $event.target.value)"
+            />
+          </label>
+          <label class="field">
+            <span>單價</span>
+            <input
+              type="text"
+              class="cell-input qty"
+              :value="line.unit_price_raw"
+              :disabled="readonly"
+              @change="onFieldChange(line, 'unit_price_raw', $event.target.value)"
+            />
+          </label>
+          <label class="field">
+            <span>金額</span>
+            <input
+              type="text"
+              class="cell-input qty"
+              :value="line.amount_raw"
+              :disabled="readonly"
+              @change="onFieldChange(line, 'amount_raw', $event.target.value)"
+            />
+          </label>
         </div>
 
+        <div class="line-card-bottom">
+          <select class="match" :value="line.store_item_code || ''" :disabled="readonly" @change="onStoreItemChange(line, $event.target.value)">
+            <option value="">（未對應，需新增品項）</option>
+            <optgroup v-for="group in groupedStoreItems" :key="group.category" :label="group.category">
+              <option v-for="item in group.items" :key="item.code" :value="item.code">
+                {{ item.name }}
+              </option>
+            </optgroup>
+          </select>
+          <label class="confirm-check">
+            <input
+              type="checkbox"
+              :checked="!!line.confirmed"
+              :disabled="readonly"
+              @change="onConfirmChange(line, $event.target.checked)"
+            />
+            已確認
+          </label>
+          <button v-if="!readonly" class="secondary danger small" title="這一列是誤判，刪掉" @click="removeLine(line)">刪除</button>
+        </div>
+      </div>
+
+      <div class="card">
         <!-- 手動新增品項：一定要從店內既有品項清單挑選，不開放自由輸入品名，
              避免打錯字或選到店裡根本沒有的東西（見docs/09材料主檔設計） -->
         <div v-if="!readonly" class="add-line-area">
@@ -178,8 +186,14 @@ const submitting = ref(false);
 const errorMessage = ref("");
 const showAddForm = ref(false);
 const newLine = reactive({ store_item_code: "", qty_raw: "", unit_raw: "", unit_price_raw: "" });
+const activePage = ref(1); // 目前左側照片顯示第幾頁，可由頁籤或品項卡片上的頁碼點擊切換
 
 const readonly = computed(() => receipt.value?.status === "confirmed");
+
+const activePhotoUrl = computed(() => {
+  const photos = receipt.value?.photos || [];
+  return photos.find((p) => p.page_number === activePage.value)?.url ?? photos[0]?.url ?? null;
+});
 
 // 依分類分組，讓下拉選單用 <optgroup> 呈現，品項變多時還是好找、方便跟照片核對
 const groupedStoreItems = computed(() => {
@@ -211,6 +225,7 @@ async function load() {
   const [r, items] = await Promise.all([api.getReceipt(props.id), api.getStoreItems()]);
   receipt.value = r;
   storeItems.value = items;
+  activePage.value = 1;
   loading.value = false;
 }
 
@@ -325,39 +340,77 @@ onMounted(load);
   display: flex;
   flex-direction: column;
 }
+.page-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 8px 0;
+  background: var(--panel);
+  flex-wrap: wrap;
+}
+.page-tab {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--text-dim);
+}
+.page-tab.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  border-color: var(--accent);
+}
+.page-badge {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.page-badge.active {
+  border-color: var(--accent);
+}
 .review-pane {
   flex: 1;
   min-width: 0;
 }
-.table-scroll {
-  overflow-x: auto;
+.line-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
 }
-table {
-  min-width: 760px; /* 欄位太多時寧可整張表橫向捲動，也不要把品名欄位擠到看不清楚 */
+.line-card.locked {
+  opacity: 0.7;
 }
-.col-name {
-  min-width: 170px;
-}
-.col-match {
-  min-width: 190px;
+.line-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .cell-input {
-  width: 100%;
-  min-width: 70px;
   border: 1px solid transparent;
   background: transparent;
   padding: 3px 4px;
   border-radius: 4px;
   font-family: inherit;
-  font-size: inherit;
   color: inherit;
 }
 .cell-input.name {
-  min-width: 150px;
+  flex: 1;
+  min-width: 0; /* 讓品名優先吃滿整行寬度，字體略縮小一點就能顯示更多字 */
+  font-size: 0.86rem;
+  font-weight: 600;
 }
 .cell-input.qty {
-  width: 64px;
-  min-width: 0;
+  width: 100%;
+  font-size: 0.86rem;
 }
 .cell-input:hover,
 .cell-input:focus {
@@ -368,12 +421,46 @@ table {
   color: var(--text-dim);
 }
 .vendor-code {
-  display: block;
   color: var(--text-dim);
   font-size: 0.72rem;
+  margin-top: 2px;
 }
-tr.locked td {
-  opacity: 0.75;
+.line-card-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+.line-card-fields .field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 70px;
+  min-width: 70px;
+}
+.line-card-fields .field span {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+.line-card-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.line-card-bottom .match {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.confirm-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 button.secondary.danger {
   color: var(--low);

@@ -13,6 +13,17 @@ const db = new DatabaseConstructor(DB_PATH);
 db.pragma("journal_mode = WAL");
 db.exec(readFileSync(join(__dirname, "schema.sql"), "utf8"));
 
+// schema.sql用CREATE TABLE IF NOT EXISTS，既有資料庫不會自動補上後來新增的欄位，
+// 這裡做最簡單的手動遷移：檢查欄位在不在，不在就ALTER TABLE補上（見多頁單據功能）
+function ensureColumn(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    console.log(`資料庫遷移：${table} 補上欄位 ${column}`);
+  }
+}
+ensureColumn("receipt_lines", "page_number", "INTEGER");
+
 function seedIfEmpty() {
   const vendorCount = db.prepare("SELECT COUNT(*) AS n FROM vendors").get().n;
   if (vendorCount > 0) return;

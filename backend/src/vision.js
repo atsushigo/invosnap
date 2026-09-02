@@ -60,21 +60,37 @@ function friendlyVisionError(err) {
 }
 
 /**
- * @param {Buffer} imageBuffer
- * @param {string} mimeType 例如 image/jpeg
- * @returns {Promise<object>} 符合 docs/06 schema 的辨識結果
+ * @param {{buffer: Buffer, mimeType: string}[]} images 依頁面順序排列的照片，
+ *   單頁單據就傳長度1的陣列。多張會在同一次API呼叫裡一起送出（不是每頁各呼叫一次），
+ *   讓模型能跨頁理解同一張單據、也比較省錢。
+ * @returns {Promise<object>} 符合 docs/06 schema 的辨識結果，items[].page 對應第幾張圖
  */
-export async function recognizeReceiptImage(imageBuffer, mimeType) {
+export async function recognizeReceiptImages(images) {
   if (!isVisionConfigured()) {
     throw new Error(friendlyVisionError({ message: "Could not resolve authentication method" }));
   }
+  if (!images.length) {
+    throw new Error("至少需要一張照片");
+  }
 
   try {
-    const resized = await sharp(imageBuffer)
-      .rotate() // 依照片EXIF方向自動轉正，避免手機直拍變橫的
-      .resize({ width: MAX_EDGE_PX, height: MAX_EDGE_PX, fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 85 })
-      .toBuffer();
+    const imageBlocks = [];
+    for (const { buffer, mimeType } of images) {
+      const resized = await sharp(buffer)
+        .rotate() // 依照片EXIF方向自動轉正，避免手機直拍變橫的
+        .resize({ width: MAX_EDGE_PX, height: MAX_EDGE_PX, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+      imageBlocks.push({
+        type: "image",
+        source: { type: "base64", media_type: "image/jpeg", data: resized.toString("base64") },
+      });
+    }
+
+    const instruction =
+      images.length > 1
+        ? `這是同一張送貨單的${images.length}張照片，依序是第1頁到第${images.length}頁，請當同一張單據辨識，回傳符合schema的JSON。`
+        : "請辨識這張送貨單，回傳符合schema的JSON。";
 
     const response = await getClient().messages.create({
       model: MODEL,
@@ -83,13 +99,7 @@ export async function recognizeReceiptImage(imageBuffer, mimeType) {
       messages: [
         {
           role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: "image/jpeg", data: resized.toString("base64") },
-            },
-            { type: "text", text: "請辨識這張送貨單，回傳符合schema的JSON。" },
-          ],
+          content: [...imageBlocks, { type: "text", text: instruction }],
         },
       ],
     });

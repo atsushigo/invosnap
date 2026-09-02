@@ -18,9 +18,10 @@ export const api = {
   getReceipts: () => fetch(`${BASE}/receipts`).then(handle),
   getReceipt: (id) => fetch(`${BASE}/receipts/${id}`).then(handle),
 
-  recognizeReceipt: (file) => {
+  // files: 一或多個File，同一張單據的不同頁依順序傳入
+  recognizeReceipt: (files) => {
     const form = new FormData();
-    form.append("photo", file);
+    for (const file of files) form.append("photos", file);
     return fetch(`${BASE}/receipts/recognize`, { method: "POST", body: form }).then(handle);
   },
 

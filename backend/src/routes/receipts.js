@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import db from "../db.js";
-import { recognizeReceiptImage } from "../vision.js";
+import { recognizeReceiptImages } from "../vision.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const UPLOAD_DIR = join(__dirname, "..", "..", "uploads");
@@ -67,20 +67,26 @@ function guessVendorId(vendorNameGuess) {
   return row ? row.id : null;
 }
 
-// 拍照上傳並呼叫Vision API辨識，寫入 pending_review 狀態的單據
-router.post("/recognize", upload.single("photo"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "缺少照片檔案（field name: photo）" });
+// 拍照上傳並呼叫Vision API辨識，寫入 pending_review 狀態的單據。
+// 支援一次傳多張照片（同一張單據的不同頁），全部照片會在同一次API呼叫裡一起送出。
+router.post("/recognize", upload.array("photos", 6), async (req, res) => {
+  const files = req.files || [];
+  if (files.length === 0) {
+    return res.status(400).json({ error: "缺少照片檔案（field name: photos，可以傳多個）" });
   }
-  const ext = extname(req.file.originalname || "").toLowerCase();
-  const mimeType = MIME_BY_EXT[ext] || req.file.mimetype;
-  if (!Object.values(MIME_BY_EXT).includes(mimeType)) {
-    return res.status(400).json({ error: `不支援的圖片格式: ${ext || mimeType}（支援 jpg/png/webp）` });
+
+  const images = [];
+  for (const file of files) {
+    const ext = extname(file.originalname || "").toLowerCase();
+    const mimeType = MIME_BY_EXT[ext] || file.mimetype;
+    if (!Object.values(MIME_BY_EXT).includes(mimeType)) {
+      return res.status(400).json({ error: `不支援的圖片格式: ${ext || mimeType}（支援 jpg/png/webp）` });
+    }
+    images.push({ buffer: readFileSync(file.path), mimeType, filename: file.filename });
   }
 
   try {
-    const imageBuffer = readFileSync(req.file.path);
-    const result = await recognizeReceiptImage(imageBuffer, mimeType);
+    const result = await recognizeReceiptImages(images.map(({ buffer, mimeType }) => ({ buffer, mimeType })));
     const vendorId = guessVendorId(result.vendor_name_guess);
 
     const insertReceipt = db.prepare(
@@ -90,7 +96,7 @@ router.post("/recognize", upload.single("photo"), async (req, res) => {
     const info = insertReceipt.run({
       vendor_id: vendorId,
       vendor_name_guess: result.vendor_name_guess ?? null,
-      photo_filename: req.file.filename,
+      photo_filename: images[0].filename, // 向後相容用：只支援單張照片的舊程式碼路徑
       date_guess: result.date_guess ?? null,
       receipt_no_guess: result.receipt_no_guess ?? null,
       raw_ocr_json: JSON.stringify(result),
@@ -99,11 +105,18 @@ router.post("/recognize", upload.single("photo"), async (req, res) => {
     });
     const receiptId = info.lastInsertRowid;
 
+    const insertPhoto = db.prepare(
+      `INSERT INTO receipt_photos (receipt_id, filename, page_number) VALUES (?, ?, ?)`
+    );
+    images.forEach((img, idx) => insertPhoto.run(receiptId, img.filename, idx + 1));
+
+    const pageCount = images.length;
     const insertLine = db.prepare(
-      `INSERT INTO receipt_lines (receipt_id, vendor_item_code, name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, matched_store_item_code_guess, store_item_code, confidence, confirmed)
-       VALUES (@receipt_id, @vendor_item_code, @name_raw, @qty_raw, @unit_raw, @unit_price_raw, @amount_raw, @matched_store_item_code_guess, @store_item_code, @confidence, 0)`
+      `INSERT INTO receipt_lines (receipt_id, vendor_item_code, name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, matched_store_item_code_guess, store_item_code, confidence, confirmed, page_number)
+       VALUES (@receipt_id, @vendor_item_code, @name_raw, @qty_raw, @unit_raw, @unit_price_raw, @amount_raw, @matched_store_item_code_guess, @store_item_code, @confidence, 0, @page_number)`
     );
     for (const item of result.items || []) {
+      const page = Number.isInteger(item.page) && item.page >= 1 && item.page <= pageCount ? item.page : 1;
       insertLine.run({
         receipt_id: receiptId,
         vendor_item_code: item.vendor_item_code ?? null,
@@ -115,6 +128,7 @@ router.post("/recognize", upload.single("photo"), async (req, res) => {
         matched_store_item_code_guess: item.matched_store_item_code_guess ?? null,
         store_item_code: item.matched_store_item_code_guess ?? null, // 先預填猜測值，店長覆核時可修改
         confidence: item.confidence ?? "low",
+        page_number: page,
       });
     }
 
@@ -125,13 +139,30 @@ router.post("/recognize", upload.single("photo"), async (req, res) => {
   }
 });
 
+// 一張單據可能有多頁照片；新資料存在receipt_photos表，舊資料（改schema前）
+// 只有receipts.photo_filename這個單一欄位，這裡統一組成同一種陣列格式給前端用
+function getPhotos(receiptId, fallbackFilename) {
+  const rows = db
+    .prepare("SELECT id, filename, page_number FROM receipt_photos WHERE receipt_id = ? ORDER BY page_number")
+    .all(receiptId);
+  if (rows.length > 0) {
+    return rows.map((p) => ({ id: p.id, page_number: p.page_number, url: `/uploads/${p.filename}` }));
+  }
+  if (fallbackFilename) {
+    return [{ id: null, page_number: 1, url: `/uploads/${fallbackFilename}` }];
+  }
+  return [];
+}
+
 function getReceiptWithLines(id) {
   const receipt = db.prepare("SELECT * FROM receipts WHERE id = ?").get(id);
   if (!receipt) return null;
   const lines = db.prepare("SELECT * FROM receipt_lines WHERE receipt_id = ? ORDER BY id").all(id);
+  const photos = getPhotos(id, receipt.photo_filename);
   return {
     ...receipt,
-    photo_url: receipt.photo_filename ? `/uploads/${receipt.photo_filename}` : null,
+    photo_url: photos[0]?.url ?? null, // 向後相容：舊前端邏輯還在用這個欄位的話不會壞
+    photos,
     notes: parseNotesForResponse(receipt.notes),
     lines,
   };

@@ -57,5 +57,16 @@ CREATE TABLE IF NOT EXISTS receipt_lines (
   matched_store_item_code_guess TEXT,
   store_item_code TEXT REFERENCES store_items(code),
   confidence TEXT, -- high / medium / low
-  confirmed INTEGER NOT NULL DEFAULT 0
+  confirmed INTEGER NOT NULL DEFAULT 0,
+  page_number INTEGER -- 這個品項是從第幾張照片(頁)辨識出來的，供覆核頁切換對照，可為null
+);
+
+-- 一張單據可能不只一張照片（例如多頁疊拍分開拍、或供應商單據本身就有好幾頁），
+-- 依上傳順序記錄每一頁。舊資料（改schema前只支援單張照片）沒有這張表的資料，
+-- 讀取時後端會拿 receipts.photo_filename 當作只有一頁的fallback。
+CREATE TABLE IF NOT EXISTS receipt_photos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  receipt_id INTEGER NOT NULL REFERENCES receipts(id),
+  filename TEXT NOT NULL,
+  page_number INTEGER NOT NULL
 );
