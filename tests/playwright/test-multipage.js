@@ -1,9 +1,10 @@
-const { chromium } = require("playwright");
-const path = require("path");
+import { chromium } from "playwright";
+import path from "node:path";
+import fs from "node:fs";
 
 const BASE = "http://localhost:5174";
-const TWO_PHOTO_RECEIPT_ID = 15; // 需要真的有2張receipt_photos的單據，見 seed-fixtures.js fixture A
-const SINGLE_PAGE_RECEIPT_ID = 17; // 隨便一筆單頁單據，測「不該顯示分頁UI」
+const TWO_PHOTO_RECEIPT_ID = 18; // 需要真的有2張receipt_photos的單據，見 seed-fixtures.js fixture A
+const SINGLE_PAGE_RECEIPT_ID = 20; // 隨便一筆單頁單據，測「不該顯示分頁UI」
 const errors = [];
 function assert(cond, msg) {
   if (!cond) errors.push(msg);
@@ -60,7 +61,6 @@ function assert(cond, msg) {
   assert(await fileInput.evaluate((el) => el.multiple === true), "上傳頁的檔案選取器允許多選(multiple屬性)");
 
   const samplePhotoDir = "/mnt/c/Users/Owner/Downloads/川醉湘 進貨單";
-  const fs = require("fs");
   let filesToUse = [];
   try {
     filesToUse = fs.readdirSync(samplePhotoDir).slice(0, 2).map((f) => path.join(samplePhotoDir, f));
