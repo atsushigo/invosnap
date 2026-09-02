@@ -68,6 +68,8 @@ Phase 3（只有在擴散到多店、單量大幅成長時才評估）
 
 依你的補充，部署順序改為：**先在本機/店內電腦跑通MVP，驗證整條流程沒問題後，再遷移到小型雲主機**。這個順序不影響任何程式碼設計——03文件的架構本來就是「SQLite本機檔案優先」，符合這個順序；等本機驗證穩定後，把SQLite檔案搬到雲主機上（或換成雲端Postgres）即可銜接第二階段，見已更新的 [03-architecture-proposal.md](03-architecture-proposal.md) 部署建議段落。
 
+**雲端主機選擇（2026-09-02補充）**：你確認上雲會用Hetzner（既有side projects部署的地方，便宜）。但你目前的Hetzner伺服器 `[redacted-other-project-host]` 是 `trading-monorepo` 的正式環境，正在跑即時交易機器人，**強烈建議InvoSnap不要跟它共用機器**，另外開一台入門級新機器（CX22等級即可，月費約€4~5）專門跑InvoSnap。理由與細節見 [11-review-checklist.md](11-review-checklist.md) 第一節，這點需要你確認。
+
 ## 參考來源
 
 - [Claude API Pricing 2026: Opus 4.8, Sonnet 4.6, Haiku 4.5 Costs](https://www.metacto.com/blogs/anthropic-api-pricing-a-full-breakdown-of-costs-and-integration)

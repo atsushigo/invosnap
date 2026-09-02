@@ -404,6 +404,7 @@
     <li><button data-page="p8"><span class="idx">08</span><span>真實單據驗證樣本</span></button></li>
     <li><button data-page="p9"><span class="idx">09</span><span>材料主檔與廠商對照</span></button></li>
     <li><button data-page="p10"><span class="idx">10</span><span>API費用試算與備案</span></button></li>
+    <li><button data-page="p11"><span class="idx">11</span><span>待你Review清單</span></button></li>
   </ul>
 </nav>
 
@@ -514,6 +515,7 @@
     <li>08 — 真實單據驗證樣本（已去識別化）：2026/09/02首次真實單據辨識驗證結果</li>
     <li>09 — 川醉湘店內材料主檔與各廠商映射對照：依真實單據建立的種子資料</li>
     <li>10 — 影像辨識API費用試算與備案方案：系統化比較表與分層策略</li>
+    <li>11 — 待你Review的事項清單：目前卡點總盤點，含Hetzner部署風險提醒</li>
   </ul>
 </section>
 
@@ -1210,9 +1212,67 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
 
   <h2>五、部署順序更新</h2>
   <p>依補充意見，部署順序改為：<strong>先在本機/店內電腦跑通MVP，驗證整條流程沒問題後，再遷移到小型雲主機</strong>。這個順序不影響任何程式碼設計——架構本來就是「SQLite本機檔案優先」，等本機驗證穩定後，把SQLite檔案搬到雲主機上即可銜接第二階段，見已更新的「04·系統架構提案」部署建議段落。</p>
+  <div class="callout">
+    <strong>雲端主機選擇（2026-09-02補充）</strong>：你確認上雲會用Hetzner。但你目前的Hetzner伺服器 <code>[redacted-other-project-host]</code> 是另一個專案 trading-monorepo 的正式環境，正在跑即時交易機器人，強烈建議InvoSnap不要跟它共用機器，另外開一台入門級新機器（CX22等級即可，月費約€4~5）專門跑InvoSnap。細節見下一篇「11·待你Review清單」。
+  </div>
 
   <div class="footer-nav">
     <button data-page="p9">← 材料主檔與廠商對照</button>
+    <button data-page="p11">下一篇：待你Review清單 →</button>
+  </div>
+</section>
+
+<!-- P11 待你Review清單 -->
+<section class="page" id="p11">
+  <h1>11 · 待你 Review 的事項清單</h1>
+  <p class="page-desc">2026-09-02 盤點：哪些地方需要你檢查/拍板才能繼續往下走</p>
+
+  <h2>一、雲端部署：Hetzner，但建議跟 trading-monorepo 分開機器</h2>
+  <p>你提到上雲要用Hetzner，因為side projects都部署在那邊、比較便宜。這個方向沒問題，但有一個重要風險點要先跟你確認：</p>
+  <p>你現有的Hetzner伺服器 <code>[redacted-other-project-host]</code>（CX33，Helsinki）目前是 <code>trading-monorepo</code> 專案的<strong>正式環境</strong>，跑著10個Docker容器，包含即時交易機器人。這台機器最近才因為SSH金鑰救援花了兩次重開機才修復，而且：</p>
+  <ul>
+    <li>目前有一個<strong>還沒查出根因的OOM(記憶體不足)問題</strong>：曾觀察到某個python程序被系統持續kill掉又重啟的迴圈，還沒排查完成</li>
+    <li><code>sam</code>帳號的密碼跟SSH私鑰<strong>都沒有備份在任何密碼管理工具裡</strong>，目前唯一的存取管道就是這台機器上的金鑰</li>
+  </ul>
+  <div class="callout conclusion">
+    <strong>建議：不要把InvoSnap跑在 [redacted-other-project-host] 上。</strong>理由：(1) InvoSnap是完全不相關的餐飲小工具，混進交易機器人的正式環境，一旦InvoSnap這邊出問題，有機會拖累到正在跑真錢交易的機器人，風險不對等；(2) 那台機器本身已有未解的OOM問題，資源餘裕不明；(3) Hetzner入門級機型月費約€4~5，比起潛在風險，另開一台機器的成本可忽略。建議在同一個Hetzner帳號下另開一台小規格新機器（CX22等級即可）專門跑InvoSnap，跟 [redacted-other-project-host] 完全隔離。
+  </div>
+  <p style="font-size:0.85rem;color:var(--text-dim)">這點需要你明確拍板，因為涉及是否要花錢開新機器、以及你對那台交易機器人主機現況比較熟悉。</p>
+
+  <h2>二、一定要你決定/提供的事項</h2>
+  <div class="table-wrap"><table>
+    <tr><th>事項</th><th>狀態</th></tr>
+    <tr><td>POS系統是否支援匯入、匯入格式</td><td>未確認——目前唯一還會影響「匯出模組」實際設計的未知數</td></tr>
+    <tr><td>POS系統廠牌名稱</td><td>未確認</td></tr>
+    <tr><td>供應商單據範例</td><td>部分：已有3家供應商的3張真實單據，店裡最多5家供應商，還有至少1~2家沒看過格式</td></tr>
+    <tr><td>單位換算規則來源</td><td>部分：真實資料顯示大多不需要複雜度量衡換算，但有5筆品項待確認（見09）</td></tr>
+    <tr><td>新品項/新供應商處理流程</td><td>已有設計方案，但沒跟店長最終拍板</td></tr>
+    <tr><td>資料存放位置</td><td><span class="badge good">已定案</span>本機優先，之後Hetzner新機器</td></tr>
+    <tr><td><strong>雲端主機是否要開新機器</strong></td><td>待你決定，見上方第一點</td></tr>
+    <tr><td>Anthropic API金鑰由誰申請/付款</td><td>尚未討論——Claude Max訂閱不含API額度，正式跑起來需要一組獨立計費的API key</td></tr>
+  </table></div>
+
+  <h2>三、我已經有建議、你確認就好的事項</h2>
+  <ul>
+    <li>影像辨識技術路線：LLM Vision API（Claude Sonnet 5起步）</li>
+    <li>資料模型設計：StoreItem/Vendor/VendorItemMapping，已用真實資料驗證</li>
+    <li>品項比對邏輯：優先用廠商品項編號，其次LLM語意比對</li>
+    <li>匯出格式：先做內部標準格式、跟POS解耦，等POS資訊確認後再加adapter</li>
+    <li>費用備案分層策略：Sonnet 5 → Haiku 4.5 → Gemini Flash → 自架開源模型</li>
+  </ul>
+
+  <h2>四、現在可以開始寫程式嗎</h2>
+  <p><strong>可以</strong>，只要你對「一、雲端部署」的建議沒意見。程式碼開發（Node.js後端＋Vue前端＋SQLite）完全不受POS問題影響，可以先在本機動工；等你確認要開新Hetzner機器或有其他意見，再調整部署那一段。</p>
+
+  <h2>五、下一步建議順序</h2>
+  <ol>
+    <li>確認「開新Hetzner機器」這個判斷有沒有問題（或有更了解那台trading機器現況的資訊）</li>
+    <li>開始搭建本機MVP骨架（Node.js + Vue + SQLite），把已有的種子資料（data/）接進去</li>
+    <li>之後有空，去跟店長要剩下1~2家供應商的單據範例、順便問一下09列出的5筆待確認品項、以及POS匯入方式</li>
+  </ol>
+
+  <div class="footer-nav">
+    <button data-page="p10">← API費用試算與備案</button>
     <button data-page="p0">回到總覽 →</button>
   </div>
 </section>
