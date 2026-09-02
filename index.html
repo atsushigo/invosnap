@@ -387,9 +387,9 @@
     <div class="sub">供應商紙本進貨單 → POS建檔自動化</div>
     <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
       <div style="flex:1;height:6px;border-radius:999px;background:var(--table-head);overflow:hidden;">
-        <div style="height:100%;width:30%;border-radius:999px;background:linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);"></div>
+        <div style="height:100%;width:33%;border-radius:999px;background:linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);"></div>
       </div>
-      <span style="font-size:0.72rem;color:var(--text-dim);font-weight:700;white-space:nowrap;">30% 完成</span>
+      <span style="font-size:0.72rem;color:var(--text-dim);font-weight:700;white-space:nowrap;">33% 完成</span>
     </div>
   </div>
   <ul class="navlist" id="navlist">
@@ -402,6 +402,7 @@
     <li><button data-page="p6"><span class="idx">06</span><span>Vision Prompt / 驗證腳本</span></button></li>
     <li><button data-page="p7"><span class="idx">07</span><span>關鍵模組設計與可行性</span></button></li>
     <li><button data-page="p8"><span class="idx">08</span><span>真實單據驗證樣本</span></button></li>
+    <li><button data-page="p9"><span class="idx">09</span><span>材料主檔與廠商對照</span></button></li>
   </ul>
 </nav>
 
@@ -435,10 +436,10 @@
       <div class="pmeta">最後更新：2026-09-02</div>
     </div>
     <div class="progress-total">
-      <div class="pct" id="overallPct">30%</div>
-      <div class="track"><div class="fill" id="overallFill" style="width:30%"></div></div>
+      <div class="pct" id="overallPct">33%</div>
+      <div class="track"><div class="fill" id="overallFill" style="width:33%"></div></div>
     </div>
-    <div class="progress-def">100% 的定義：整個工具（拍照上傳、辨識、供應商對照/單位換算、覆核確認、匯出）完成開發與實測，可以正式提交給川醉湘店長與門市人員上線使用。目前完成「需求釐清＋技術調查與選型」，並已用3張真實單據做過零成本辨識初步驗證（見08），尚未開始寫程式。</div>
+    <div class="progress-def">100% 的定義：整個工具（拍照上傳、辨識、供應商對照/單位換算、覆核確認、匯出）完成開發與實測，可以正式提交給川醉湘店長與門市人員上線使用。目前完成「需求釐清＋技術調查與選型」，已用3張真實單據做過零成本辨識初步驗證（見08），並依真實資料建好初版材料主檔與廠商對照種子資料（見09），尚未開始寫程式。</div>
 
     <div class="phase-list" id="phaseList">
       <div class="phase-row">
@@ -474,8 +475,8 @@
       <div class="phase-row">
         <div class="pname">供應商對照表與單位換算邏輯</div>
         <div class="pweight">權重 10%</div>
-        <div class="ptrack"><div class="pfill" style="width:0%"></div></div>
-        <div class="pval"><span class="badge todo">0%</span></div>
+        <div class="ptrack"><div class="pfill" style="width:35%"></div></div>
+        <div class="pval"><span class="badge mid">35%</span></div>
       </div>
       <div class="phase-row">
         <div class="pname">實測驗證（真實單據小規模測試）</div>
@@ -510,6 +511,7 @@
     <li>06 — 台灣送貨單格式模擬 + Vision Prompt/Schema 設計、驗證腳本骨架</li>
     <li>07 — 關鍵模組設計與可行性討論（品項比對、拍照守門、覆核流程、匯出解耦、維護介面）</li>
     <li>08 — 真實單據驗證樣本（已去識別化）：2026/09/02首次真實單據辨識驗證結果</li>
+    <li>09 — 川醉湘店內材料主檔與各廠商映射對照：依真實單據建立的種子資料</li>
   </ul>
 </section>
 
@@ -1106,6 +1108,56 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
 
   <div class="footer-nav">
     <button data-page="p7">← 關鍵模組設計與可行性</button>
+    <button data-page="p9">下一篇：材料主檔與廠商對照 →</button>
+  </div>
+</section>
+
+<!-- P9 材料主檔與廠商對照 -->
+<section class="page" id="p9">
+  <h1>09 · 川醉湘店內材料主檔與各廠商映射對照</h1>
+  <p class="page-desc">用三張真實單據把 StoreItem／Vendor／VendorItemMapping 的種子資料實際建出來，不再只是空的資料表結構</p>
+
+  <div class="callout">
+    三份JSON放在 <code>data/</code> 目錄（<code>store-items.json</code>、<code>vendors.json</code>、<code>vendor-item-mapping.json</code>、<code>generic-produce-aliases.json</code>），未來寫後端時可以直接載入當初始資料。
+  </div>
+
+  <h2>店內材料主檔設計（31項起步）</h2>
+  <p>依三張真實單據出現過的品項，加上麻辣烫/滷味店常見分類，分成6大類。這只是起步，遠不是川醉湘實際採購的全部品項，之後每拿到新單據，主檔會持續長大。</p>
+  <div class="table-wrap"><table>
+    <tr><th>分類</th><th>說明</th><th>目前品項數</th></tr>
+    <tr><td>葉菜類</td><td>大陸妹、高麗菜、娃娃菜、韭菜</td><td>4</td></tr>
+    <tr><td>根莖/瓜果類</td><td>白蘿蔔、茭白筍、玉米筍</td><td>3</td></tr>
+    <tr><td>菇類</td><td>金針菇</td><td>1</td></tr>
+    <tr><td>豆製品</td><td>黑豆干、五香豆干、油豆腐、豆芽菜、豆皮捲</td><td>5</td></tr>
+    <tr><td>加工肉品/丸類</td><td>豬肉捲、羊肉捲、牛肉捲、排骨酥、水晶餃、鑫鑫腸、級棒、竹輪、黑輪、白管、魷魚刻花、蔥花</td><td>12</td></tr>
+    <tr><td>主食/澱粉類</td><td>年糕片、年糕條、王子麵、寬冬粉、細冬粉、小油皮</td><td>6</td></tr>
+  </table></div>
+
+  <h2>廠商映射對照的實際發現</h2>
+  <ol>
+    <li><strong>同一品項、多供應商採購的真實案例</strong>：「高麗菜」同時出現在雄泉鮮食（寫作「初秋高麗A*」）跟阿凱生蔬（寫作「高麗菜」），兩者都對應到店內同一個品項代碼V002。這正是「07·關鍵模組設計」模組一設計時設想的核心情境，現在有真實資料驗證，比對邏輯的價值直接被證實。</li>
+    <li><strong>包裝規格 ≠ 單位換算，是另一個維度的問題</strong>：「黑豆干2斤/包」用「包」計價，但每包內容量是2斤——這不是台斤/公斤那種度量衡換算，而是「包裝規格」問題。若要做每台斤成本分析，需要額外的 <code>pack_content_qty</code> 欄位，跟單純的 <code>conversion_rate</code> 分開。已回頭補進「03·系統架構提案」的資料模型。</li>
+    <li><strong>辨識信心與對照不確定性是分開的兩件事</strong>：阿凱生蔬單據「大陸妹韭菜」這一行，辨識信心是medium（字看得清楚），但對照上該算一筆還是拆成兩筆是不確定的——覆核UI不能只看辨識信心，還要有獨立的「比對不確定性」維度需要人工看過。</li>
+    <li><strong>單位欄位文字跟備註欄位可能互相矛盾</strong>：玉米筍單位欄寫「盒」但品名備註「10包」；五香豆干單位欄寫「斤」但備註「2條」。這類衝突人靠常識能判斷，辨識模型未必能穩定處理，先標記待確認，不能讓系統自己猜。</li>
+  </ol>
+
+  <h2>目前 needs_confirmation 的品項（需要店長協助確認）</h2>
+  <div class="table-wrap"><table>
+    <tr><th>供應商</th><th>品名</th><th>疑問</th></tr>
+    <tr><td>鮮味嘉企業</td><td>九層薑之揚</td><td>品名意義不明確，店內主檔沒有對應項目</td></tr>
+    <tr><td>阿凱生蔬</td><td>大陸妹韭菜</td><td>懷疑是兩個品項被誤判合併成一行</td></tr>
+    <tr><td>阿凱生蔬</td><td>五香豆干(2條)</td><td>單位欄「斤」跟備註「2條」的關係不確定</td></tr>
+    <tr><td>阿凱生蔬</td><td>溫室(50顆)</td><td>完全不確定是什麼品項</td></tr>
+    <tr><td>阿凱生蔬</td><td>玉米筍(10包)</td><td>單位欄「盒」跟備註「10包」的關係不確定</td></tr>
+  </table></div>
+  <p>這份清單本身就是實際產出——如果之後要跟店長對一次真實資料，這5筆最值得優先問，其餘的都已經有信心對應好了。</p>
+
+  <div class="callout conclusion">
+    「同一店內品項被多家供應商供應」不是例外情況，是常態（高麗菜已是實例）——主檔設計跟未來可能的採購比價功能都應該把這個假設當預設，而不是特例處理。
+  </div>
+
+  <div class="footer-nav">
+    <button data-page="p8">← 真實單據驗證樣本</button>
     <button data-page="p0">回到總覽 →</button>
   </div>
 </section>

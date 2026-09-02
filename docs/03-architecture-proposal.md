@@ -64,11 +64,14 @@ Vendor（供應商）
 VendorItemMapping（供應商品項對照/單位換算表）★核心業務規則表，非AI猜測
   - id
   - vendor_id
+  - vendor_item_code（供應商自己的品項編號，可為null；若有，比對優先用這個，見09）
   - vendor_item_name（供應商單據上寫的品名，可能各廠商叫法不同）
   - store_item_id → StoreItem
-  - unit_conversion_rate（供應商單位 → 店內標準單位的換算率，例：1台斤 = 0.6公斤）
+  - unit_conversion_rate（供應商單位 → 店內標準單位的度量衡換算率，例：1台斤 = 0.6公斤）
+  - pack_content_qty（包裝內容量，可為null，例：黑豆干以「包」計價但每包內容量2斤——這跟度量衡換算是不同維度，見09）
   - vendor_unit（來源單位）
   - store_unit（目標/店內標準單位）
+  - status（confirmed / needs_confirmation / new_item——比對狀態，跟辨識信心是分開的兩件事，見09）
 
 StoreItem（店內標準品項主檔）
   - id

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "VEN001",
+    "name": "鮮味嘉企業有限公司",
+    "type": "乾貨/加工食材",
+    "unit_habit": "包/盒/箱為主，單據上自帶廠商品項編號（如 B0002、D0007-1）",
+    "document_style": "電腦列印「銷貨單」，多頁，序號+貨品編號+品名+數量+單位+單價+小計",
+    "has_vendor_item_code": true,
+    "source": "docs/08-real-receipt-samples.md 樣本1"
+  },
+  {
+    "id": "VEN002",
+    "name": "雄泉鮮食企業股份有限公司",
+    "type": "生鮮蔬果",
+    "unit_habit": "台斤為主，數量常為小數（如4.88台斤）",
+    "document_style": "電腦列印「銷貨憑單」，雙欄並排，含缺貨備註",
+    "has_vendor_item_code": false,
+    "source": "docs/08-real-receipt-samples.md 樣本2"
+  },
+  {
+    "id": "VEN003",
+    "name": "阿凱生蔬",
+    "type": "生鮮蔬果（電話叫貨專線）",
+    "unit_habit": "斤/包為主，品名常用生鮮批發業界通用簡稱",
+    "document_style": "電腦列印「出貨單」，叫貨專線接單後印出，含匯款帳戶資訊",
+    "has_vendor_item_code": false,
+    "source": "docs/08-real-receipt-samples.md 樣本3"
+  }
+]
