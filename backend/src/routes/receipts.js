@@ -34,6 +34,31 @@ const upload = multer({
 
 const router = Router();
 
+// 模型輸出的notes可能是陣列（新schema）、單一字串、或null，統一轉成乾淨的
+// 字串陣列再存進DB（存成JSON字串），方便前端條列顯示（見docs要求）
+function normalizeNotes(notes) {
+  if (!notes) return [];
+  const list = Array.isArray(notes) ? notes : [notes];
+  return list.map((n) => String(n).trim()).filter(Boolean);
+}
+
+// 讀取時把notes欄位還原成陣列給前端用：新資料本來就存JSON陣列字串，
+// 舊資料（改schema前存的）是一整段字串，退而求其次用中文句號切開條列
+function parseNotesForResponse(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // 不是JSON，走舊資料的fallback
+  }
+  return String(raw)
+    .split("。")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => (s.endsWith("。") ? s : s + "。"));
+}
+
 function guessVendorId(vendorNameGuess) {
   if (!vendorNameGuess) return null;
   const row = db
@@ -70,7 +95,7 @@ router.post("/recognize", upload.single("photo"), async (req, res) => {
       receipt_no_guess: result.receipt_no_guess ?? null,
       raw_ocr_json: JSON.stringify(result),
       total_amount_on_receipt: result.total_amount_on_receipt ?? null,
-      notes: result.notes ?? null,
+      notes: JSON.stringify(normalizeNotes(result.notes)),
     });
     const receiptId = info.lastInsertRowid;
 
@@ -104,7 +129,12 @@ function getReceiptWithLines(id) {
   const receipt = db.prepare("SELECT * FROM receipts WHERE id = ?").get(id);
   if (!receipt) return null;
   const lines = db.prepare("SELECT * FROM receipt_lines WHERE receipt_id = ? ORDER BY id").all(id);
-  return { ...receipt, photo_url: receipt.photo_filename ? `/uploads/${receipt.photo_filename}` : null, lines };
+  return {
+    ...receipt,
+    photo_url: receipt.photo_filename ? `/uploads/${receipt.photo_filename}` : null,
+    notes: parseNotesForResponse(receipt.notes),
+    lines,
+  };
 }
 
 function assertEditable(receipt, res) {
@@ -125,7 +155,13 @@ router.get("/", (req, res) => {
        FROM receipts r ORDER BY r.created_at DESC`
     )
     .all();
-  res.json(rows.map((r) => ({ ...r, photo_url: r.photo_filename ? `/uploads/${r.photo_filename}` : null })));
+  res.json(
+    rows.map((r) => ({
+      ...r,
+      photo_url: r.photo_filename ? `/uploads/${r.photo_filename}` : null,
+      notes: parseNotesForResponse(r.notes),
+    }))
+  );
 });
 
 // 匯出內部標準格式CSV（見 docs/07 模組四），只匯出已confirmed的單據
@@ -147,11 +183,12 @@ router.get("/export/csv", (req, res) => {
 
   const header = "日期,供應商,品項代碼,品項名稱,數量,單位,單價,金額,備註";
   const csvEscape = (v) => (v == null ? "" : `"${String(v).replaceAll('"', '""')}"`);
-  const lines = rows.map((r) =>
-    [r.date_guess, r.vendor_name, r.store_item_code, r.item_name, r.qty_raw, r.unit, r.unit_price_raw, r.amount_raw, r.notes]
+  const lines = rows.map((r) => {
+    const notesText = parseNotesForResponse(r.notes).join(" / ");
+    return [r.date_guess, r.vendor_name, r.store_item_code, r.item_name, r.qty_raw, r.unit, r.unit_price_raw, r.amount_raw, notesText]
       .map(csvEscape)
-      .join(",")
-  );
+      .join(",");
+  });
 
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", "attachment; filename=invosnap-export.csv");

@@ -24,7 +24,12 @@
         <p v-if="amountMismatch" class="error-box">
           明細加總 {{ lineSum }}，跟單據上寫的總額 {{ receipt.total_amount_on_receipt }} 對不上，請對照左側照片特別注意。
         </p>
-        <p v-if="receipt.notes" style="font-size: 0.85rem; color: var(--text-dim)">辨識備註：{{ receipt.notes }}</p>
+        <div v-if="receipt.notes && receipt.notes.length" class="notes-box">
+          <div class="notes-title">辨識備註</div>
+          <ul>
+            <li v-for="(note, i) in receipt.notes" :key="i">{{ note }}</li>
+          </ul>
+        </div>
 
         <div v-if="receipt.status === 'confirmed'" class="locked-notice">
           這筆單據已經確認入帳，明細鎖定不能直接改。發現有錯的話，先按「重新開放編輯」退回待覆核狀態，
@@ -281,6 +286,29 @@ onMounted(load);
 </script>
 
 <style scoped>
+.notes-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+.notes-title {
+  font-weight: 600;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+.notes-box ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.notes-box li {
+  margin: 3px 0;
+  color: var(--text);
+}
 .split {
   display: flex;
   gap: 16px;
