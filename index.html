@@ -1024,18 +1024,19 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
 
   <div class="callout">
     去識別化說明：保留供應商公司名稱、品項編號、價格等對設計有幫助的資訊；業務員/聯絡人姓名、電話、門牌號碼等個人/敏感資訊已略去。
+    <br><strong>更正（同日）</strong>：樣本3原本誤判為「店內自己填的手寫叫貨登記單」，店長補充說明後確認這其實是<strong>供應商阿凱生蔬開來的正式出貨單</strong>（我方稱進貨單、供應商稱出貨單），也是電腦列印格式，不是手寫——已更正下方內容與結論。
   </div>
 
-  <h2>重大發現：不是每家都是手寫複寫單</h2>
-  <p>原本 [06] 假設多數單據是三聯式複寫紙手寫單，但實際3張裡有2張是<strong>電腦列印的結構化銷貨單</strong>，只有1張接近手寫：</p>
+  <h2>重大發現：三張全部是電腦列印格式，不是手寫複寫單</h2>
+  <p>原本 [06] 假設多數單據是三聯式複寫紙手寫單，但實際3張<strong>全部是電腦列印的結構化單據</strong>：</p>
   <div class="table-wrap"><table>
-    <tr><th>單據</th><th>供應商類型</th><th>格式</th><th>辨識難度</th></tr>
-    <tr><td>樣本1</td><td>乾貨/加工食材</td><td>電腦列印「銷貨單」，欄位齊全，<strong>每個品項有廠商自己的品項編號</strong></td><td><span class="badge good">低</span></td></tr>
-    <tr><td>樣本2</td><td>生鮮蔬果</td><td>電腦列印「銷貨憑單」，雙欄並排</td><td><span class="badge mid">低～中</span>（數量常為小數台斤）</td></tr>
-    <tr><td>樣本3</td><td>疑似店內叫貨登記單</td><td>手寫勾選＋填數量，品名多為縮寫，圖片橫向拍攝</td><td><span class="badge low">中～高</span></td></tr>
+    <tr><th>單據</th><th>供應商</th><th>格式</th><th>辨識難度</th></tr>
+    <tr><td>樣本1</td><td>乾貨/加工食材供應商（公司全名略）</td><td>電腦列印「銷貨單」，欄位齊全，<strong>每個品項有廠商自己的品項編號</strong></td><td><span class="badge good">低</span></td></tr>
+    <tr><td>樣本2</td><td>生鮮蔬果供應商（公司全名略）</td><td>電腦列印「銷貨憑單」，雙欄並排</td><td><span class="badge mid">低～中</span>（數量常為小數台斤）</td></tr>
+    <tr><td>樣本3</td><td><strong>阿凱生蔬</strong></td><td>電腦列印「出貨單」（叫貨專線接單後印出），品名為生鮮批發業界通用簡稱，拍攝橫向+陰影</td><td><span class="badge good">低</span>（格式）／<span class="badge mid">中</span>（純因拍攝角度）</td></tr>
   </table></div>
   <div class="callout conclusion">
-    樣本1的供應商在單據上就附了自己的<strong>品項編號</strong>（如 B0002、D0007-1），比對模組應優先用「（供應商ID, 供應商品項編號）→ 店內標準品項」比對，只有沒有品項編號的單據才退回用品名/LLM語意比對——這是原設計沒預期到的、比模擬單據更有利的情況。已回頭補進「07 · 關鍵模組設計」模組一。
+    三張單據本身格式都不差，樣本3信心偏低的主因是<strong>拍攝方式</strong>（橫向、陰影遮住格線），不是單據本身難認——這比預期更樂觀，但也代表「拍照品質守門」模組的投資報酬率其實更高：同一張單據拍正、拍平、光線均勻，辨識信心就能有感提升。樣本1的品項編號（如 B0002）比對可靠性也優於純品名比對，已回頭補進「07 · 關鍵模組設計」模組一；樣本3的「大陸妹」「交白筍」等是生鮮批發業界通用簡稱、不是隨機縮寫，值得建立跨供應商共用的簡稱對照表。
   </div>
 
   <h2>樣本1：乾貨/加工食材供應商（電腦列印銷貨單）</h2>
@@ -1071,34 +1072,36 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
   "notes": "明細加總234+32+89+76=431，與單據總計一致；備註欄寫「四角油豆腐 休息」代表本次缺貨——這種『缺貨聲明』模式值得辨識時保留，不要當雜訊丟掉"
 }</code></pre>
 
-  <h2>樣本3：疑似店內叫貨登記單（手寫勾選，橫向拍攝）</h2>
-  <p>辨識信心明顯較低，多個品名因手寫縮寫難以完全確定，建議店長人工核對：</p>
+  <h2>樣本3：阿凱生蔬出貨單（電腦列印，登錄專線叫貨模式）</h2>
+  <p>供應商透過電話叫貨專線接單後列印的出貨單，品名為生鮮批發業界通用簡稱。因拍攝時圖片橫向、有陰影遮蓋部分格線，整體信心中等，建議店長核對品名縮寫的實際所指：</p>
   <pre><code>{
-  "vendor_name_guess": "（疑似店內叫貨用登記單，非典型供應商送貨單格式）",
+  "vendor_name_guess": "阿凱生蔬",
   "date_guess": "2026-09-02",
+  "customer_guess": "川醉湘（台北仁愛）",
   "items": [
-    {"name_raw":"（韭菜類，字跡不確定）","qty_raw":"1","unit_raw":"斤","unit_price_raw":"65","amount_raw":"65","confidence":"low"},
+    {"name_raw":"大陸妹韭菜","qty_raw":"1","unit_raw":"斤","unit_price_raw":"65","amount_raw":"65","confidence":"medium"},
     {"name_raw":"高麗菜","qty_raw":"2.9","unit_raw":"斤","unit_price_raw":"40","amount_raw":"104","confidence":"medium"},
-    {"name_raw":"茭白筍(去殼大)","qty_raw":"1","unit_raw":"斤","unit_price_raw":"150","amount_raw":"150","confidence":"low"},
+    {"name_raw":"茭白筍(去殼大)","qty_raw":"1","unit_raw":"斤","unit_price_raw":"150","amount_raw":"150","confidence":"medium"},
     {"name_raw":"金針菇(大包B)","qty_raw":"1","unit_raw":"包","unit_price_raw":"310","amount_raw":"310","confidence":"medium"},
     {"name_raw":"白蘿蔔","qty_raw":"4","unit_raw":"斤","unit_price_raw":"25","amount_raw":"100","confidence":"medium"},
-    {"name_raw":"五香豆干(2條)","qty_raw":"1","unit_raw":"斤","unit_price_raw":"50","amount_raw":"50","confidence":"low"},
-    {"name_raw":"娃娃菜","qty_raw":"3","unit_raw":"包","unit_price_raw":"35","amount_raw":"105","confidence":"low"},
-    {"name_raw":"蔥花","qty_raw":"1","unit_raw":"斤","unit_price_raw":"120","amount_raw":"120","confidence":"low"},
-    {"name_raw":"（溫室50顆，品項不確定）","qty_raw":"1","unit_raw":"包","unit_price_raw":"350","amount_raw":"350","confidence":"low"},
+    {"name_raw":"五香豆干(2條)","qty_raw":"1","unit_raw":"斤","unit_price_raw":"50","amount_raw":"50","confidence":"medium"},
+    {"name_raw":"娃娃菜","qty_raw":"3","unit_raw":"包","unit_price_raw":"35","amount_raw":"105","confidence":"medium"},
+    {"name_raw":"蔥花","qty_raw":"1","unit_raw":"斤","unit_price_raw":"120","amount_raw":"120","confidence":"medium"},
+    {"name_raw":"溫室(50顆)","qty_raw":"1","unit_raw":"包","unit_price_raw":"350","amount_raw":"350","confidence":"low"},
     {"name_raw":"玉米筍(10包)","qty_raw":"1","unit_raw":"盒","unit_price_raw":"25","amount_raw":"250","confidence":"low"}
   ],
   "total_amount_on_receipt": "1604",
-  "notes": "明細加總約1604，與單據上金額一致；但半數以上品名因手寫縮寫/字跡潦草而信心偏低，是三張樣本中最接近『真正困難案例』的一張"
+  "notes": "明細加總約1604，與訂單金額一致；因拍攝角度橫向＋陰影，部分品名信心僅medium，重拍一張正向、光線均勻的照片預期可提升到high"
 }</code></pre>
 
-  <h2>這次驗證對整體設計的結論</h2>
+  <h2>這次驗證對整體設計的結論（更正版）</h2>
   <ol>
     <li><strong>辨識可行性初步驗證通過</strong>：三張單據的品名/數量/單價都能被合理抽取，明細加總對得上單據總計，符合原設計的schema與流程。</li>
-    <li><strong>難度分布比預期更分散</strong>：2/3是結構清楚的電腦列印單，只有1/3接近困難案例。真正的辨識風險集中在少數手寫/縮寫格式的供應商，不是全面性風險——覆核UI的低信心標記機制在這類單據上特別重要。</li>
-    <li><strong>拍照習慣需要提醒店長</strong>：樣本1的多頁單據疊放拍攝導致後段被遮擋，建議之後每頁分開拍、避免堆疊——成本很低但影響很大，可以直接寫進之後App的拍照引導文案。</li>
+    <li><strong>三張單據格式都不差，都是電腦列印</strong>——原本擔心的複寫紙潦草手寫單在這3個樣本中沒有出現。真正影響辨識信心的是拍照方式（角度、光線、是否疊放遮擋），不是單據本身難認，這代表「拍照品質守門」模組的投資報酬率比原先評估更高。</li>
+    <li><strong>拍照習慣需要提醒店長</strong>：樣本1多頁疊放拍攝導致後段被遮擋、樣本3橫向+陰影導致信心下降——都是使用者教育層面能解決的低成本問題，可以直接寫進之後App的拍照引導文案（一次一頁、正向拍攝、避免陰影）。</li>
     <li><strong>品項編號是意外的加分項</strong>：至少一家供應商單據上已經有自己的品項編號，比對模組應優先利用這點。</li>
-    <li>下一步：等更多天/更多供應商的單據累積，可以看出同一家供應商的格式穩定度，決定要不要幫每家供應商各自做few-shot範例。</li>
+    <li><strong>生鮮批發業界通用簡稱</strong>：「大陸妹」「交白筍」等是業界通用叫法，不是單一供應商的隨機縮寫，值得建立一份跨供應商共用的簡稱對照表，降低新增供應商時的建檔成本。</li>
+    <li>下一步：等更多天/更多供應商的單據累積，可以看出同一家供應商的格式穩定度，決定要不要幫每家供應商各自做few-shot範例；也建議之後拍照盡量正向、單頁、光線均勻。</li>
   </ol>
 
   <div class="footer-nav">
