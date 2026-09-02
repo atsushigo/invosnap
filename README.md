@@ -2,6 +2,8 @@
 
 > 川醉湘麻辣烫/滷味連鎖店－門市供應商紙本進貨單 → POS 進出貨資料自動化建檔工具
 
+**接續對話/新session先看 [docs/12-project-status-and-handoff.md](docs/12-project-status-and-handoff.md)**——現況快照、環境怎麼啟動、還有什麼沒解決，一篇看完不用爬整個對話紀錄。
+
 ## 這是什麼
 
 店長每天要處理最多 5 家供應商、每家約 3 張 A4 紙本進貨單（品項、單價、重量/數量，各家單位不一）。
@@ -22,8 +24,9 @@ InvoSnap 是一個獨立於總部POS之外的輔助小工具：手機拍照 → 
 9. [川醉湘店內材料主檔與各廠商映射對照](docs/09-store-item-master-and-vendor-mapping.md) — 依真實單據建立的種子資料，見 [`data/`](data)
 10. [影像辨識API費用試算與備案方案](docs/10-vision-api-cost-backup-plan.md) — Claude實際收費公式、Haiku/Gemini/自架開源VLM系統化比較表、分層備案策略
 11. [待你Review的事項清單](docs/11-review-checklist.md) — 目前卡點總盤點，含Hetzner部署風險提醒
+12. [專案現況與交接筆記](docs/12-project-status-and-handoff.md) — **對話上下文快滿/接續新session先看這篇**
 
-也可以直接開啟 `index.html`（分頁式整合版，含全部內容，適合快速瀏覽全貌）。
+也可以直接開啟 `index.html`（分頁式整合版，含全部內容，適合快速瀏覽全貌，發布版：[Artifact連結](https://claude.ai/code/artifact/ac79de66-9fc8-4f33-b53b-24dd6e826dd6)）。
 
 ## 快速開始（本機MVP）
 
@@ -40,7 +43,7 @@ npm install
 npm run dev
 ```
 
-功能涵蓋：拍照上傳 → Vision API辨識 → 覆核頁（指定店內品項、標記信心度、確認入帳）→ 匯出CSV。詳見 [backend/README.md](backend/README.md)、[frontend/README.md](frontend/README.md)。核心API與前端UI已用Playwright自動化測試過一輪（拍照辨識本身因為要花真的API費用而跳過，其餘流程全部驗證過）。
+功能涵蓋：拍照上傳（支援多頁）→ Vision API辨識 → 覆核頁（卡片版型、行內編輯、單子分頁籤、指定店內品項、標記信心度、確認入帳）→ CSV匯出 → 單據刪除。詳見 [backend/README.md](backend/README.md)、[frontend/README.md](frontend/README.md)。核心API與前端UI已用Playwright自動化測試過（拍照辨識本身因為要花真的API費用而跳過，其餘流程全部驗證過），測試腳本存在 [`tests/playwright/`](tests/playwright)，可重複執行。
 
 ## 驗證用腳本（尚未執行，需自備API key才會產生費用）
 
