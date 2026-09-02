@@ -403,6 +403,7 @@
     <li><button data-page="p7"><span class="idx">07</span><span>關鍵模組設計與可行性</span></button></li>
     <li><button data-page="p8"><span class="idx">08</span><span>真實單據驗證樣本</span></button></li>
     <li><button data-page="p9"><span class="idx">09</span><span>材料主檔與廠商對照</span></button></li>
+    <li><button data-page="p10"><span class="idx">10</span><span>API費用試算與備案</span></button></li>
   </ul>
 </nav>
 
@@ -512,6 +513,7 @@
     <li>07 — 關鍵模組設計與可行性討論（品項比對、拍照守門、覆核流程、匯出解耦、維護介面）</li>
     <li>08 — 真實單據驗證樣本（已去識別化）：2026/09/02首次真實單據辨識驗證結果</li>
     <li>09 — 川醉湘店內材料主檔與各廠商映射對照：依真實單據建立的種子資料</li>
+    <li>10 — 影像辨識API費用試算與備案方案：系統化比較表與分層策略</li>
   </ul>
 </section>
 
@@ -1158,6 +1160,59 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
 
   <div class="footer-nav">
     <button data-page="p8">← 真實單據驗證樣本</button>
+    <button data-page="p10">下一篇：API費用試算與備案 →</button>
+  </div>
+</section>
+
+<!-- P10 影像辨識API費用試算與備案 -->
+<section class="page" id="p10">
+  <h1>10 · 影像辨識 API 費用試算與備案方案</h1>
+  <p class="page-desc">Claude Vision API實際收費怎麼算、有沒有更便宜的備案（包含「本地訓練」是否划算）</p>
+
+  <h2>一、Claude Vision API 實際收費怎麼算</h2>
+  <p>Anthropic用「視覺token」計費，不是直接按張數收費。官方公式：</p>
+  <pre><code>影像token數 = ⌈寬度px / 28⌉ × ⌈高度px / 28⌉
+簡化估算：tokens ≈ (寬px × 高px) / 750</code></pre>
+  <p>若圖片長邊超過1568px會先自動縮小再算，單張圖片最高約1568 tokens（標準畫質）——手機拍照解析度再高，實際計費的token數是有上限的。</p>
+  <div class="callout">
+    今天（2026-09-02）Claude Sonnet 5 的開站優惠價已在8/31結束，目前正式牌價是 <strong>$3/M input、$15/M output</strong>；Haiku 4.5 維持 $1/M input、$5/M output。之前幾份文件殘留的優惠價估算數字會偏低，本頁數字才是目前準確的。
+  </div>
+
+  <h2>二、系統化比較表</h2>
+  <p>以本案單量（約15張/天、450張/月）試算，一張單據估算輸入約2000 tokens（圖片+含品項清單的prompt）、輸出約500 tokens（JSON）：</p>
+  <div class="table-wrap"><table>
+    <tr><th>方案</th><th>執行位置</th><th>Input費率($/M)</th><th>Output費率($/M)</th><th>估算每張成本</th><th>估算月成本(450張)</th><th>整合難度</th><th>建議角色</th></tr>
+    <tr><td><strong>Claude Sonnet 5</strong></td><td>Anthropic雲端API</td><td>$3</td><td>$15</td><td>~US$0.0135</td><td>~US$6.1</td><td><span class="badge good">低</span>已整合</td><td><strong>MVP主力</strong>，準確度最佳</td></tr>
+    <tr><td>Claude Haiku 4.5</td><td>Anthropic雲端API</td><td>$1</td><td>$5</td><td>~US$0.0045</td><td>~US$2.0</td><td><span class="badge good">極低</span>換model參數</td><td>同廠牌降成本備案，準確度略降</td></tr>
+    <tr><td>Gemini 2.5 Flash</td><td>Google雲端API</td><td>$0.15</td><td>$1.25</td><td>~US$0.0009</td><td>~US$0.4</td><td><span class="badge mid">中</span>需另接SDK</td><td>最便宜雲端備案，準確度需另實測</td></tr>
+    <tr><td>自架開源VLM（Qwen2.5-VL / MiniCPM-V）</td><td>自租GPU（RunPod/Modal）</td><td colspan="2">GPU $0.4~1.1/小時（按秒計費）</td><td>本案量體下&lt;US$0.05/天</td><td>&lt;US$2</td><td><span class="badge low">高</span>需部署維運</td><td>量體大幅成長（10店以上）才考慮</td></tr>
+    <tr><td>本地CPU量化小模型（完全離線）</td><td>店內/自己電腦CPU</td><td colspan="2">免費（僅電費）</td><td>US$0</td><td>US$0</td><td><span class="badge mid">中高</span>推論慢、準確度較低</td><td>純離線災難備援，非日常主力</td></tr>
+  </table></div>
+
+  <h2>三、關於「本地訓練」的澄清</h2>
+  <p>「本地訓練」有兩個不同概念需要分清楚：</p>
+  <ol>
+    <li><strong>自架（self-host）一個現成的開源模型</strong>：例如Qwen2.5-VL、MiniCPM-V，是別人已訓練好的公開權重，只是租一台有GPU的機器把它跑起來，不用自己訓練——上表「自架開源VLM」那一列在講的就是這件事。</li>
+    <li><strong>從零訓練/微調自己的模型</strong>：需要蒐集大量標註資料（至少幾千張標註單據）、租用更貴的訓練用GPU叢集、花時間調參——本案規模（單店、15張/天）完全不划算，訓練成本會遠超過直接用API幾年的費用，且不保證品質更好。</li>
+  </ol>
+  <div class="callout conclusion">
+    不建議「訓練」，最多考慮「自架現成的開源模型」——而且以本案量體，連自架都不必要，直接用API的費用低到可以忽略（月成本US$0.4~6，比任何人的時薪都便宜太多）。
+  </div>
+
+  <h2>四、建議的分層備案策略</h2>
+  <div class="flow">
+    <div class="flow-step"><div class="num">0</div><div><div class="label">Phase 0（現在，MVP）→ Claude Sonnet 5</div><div class="desc">現有腳本已支援，準確度優先，月成本&lt;US$10可忽略</div></div></div>
+    <div class="flow-step"><div class="num">1</div><div><div class="label">Phase 1（成本變考量時）→ 切換Claude Haiku 4.5</div><div class="desc">只改scripts/claude-vision-ocr.js的model參數字串，其餘完全不用動</div></div></div>
+    <div class="flow-step"><div class="num">2</div><div><div class="label">Phase 2（想要更便宜或多供應商容錯）→ 加Gemini 2.5 Flash備援</div><div class="desc">需另外寫一個介面層抽象化「呼叫哪個vision provider」</div></div></div>
+    <div class="flow-step"><div class="num">3</div><div><div class="label">Phase 3（僅擴散到多店、單量大幅成長才評估）→ 自架開源VLM</div><div class="desc">需要額外MLOps投入，本案規模不建議現在做</div></div></div>
+  </div>
+  <p><strong>這次不需要修改任何程式碼</strong>——<code>scripts/claude-vision-ocr.js</code> 目前用Claude Sonnet 5，符合Phase 0建議，先不用動。之後想切Haiku或加Gemini備援再回來調整即可，架構上不需要重寫。</p>
+
+  <h2>五、部署順序更新</h2>
+  <p>依補充意見，部署順序改為：<strong>先在本機/店內電腦跑通MVP，驗證整條流程沒問題後，再遷移到小型雲主機</strong>。這個順序不影響任何程式碼設計——架構本來就是「SQLite本機檔案優先」，等本機驗證穩定後，把SQLite檔案搬到雲主機上即可銜接第二階段，見已更新的「04·系統架構提案」部署建議段落。</p>
+
+  <div class="footer-nav">
+    <button data-page="p9">← 材料主檔與廠商對照</button>
     <button data-page="p0">回到總覽 →</button>
   </div>
 </section>

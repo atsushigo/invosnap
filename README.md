@@ -20,6 +20,7 @@ InvoSnap 是一個獨立於總部POS之外的輔助小工具：手機拍照 → 
 7. [關鍵模組設計與可行性討論](docs/07-key-modules-feasibility.md) — 品項比對、拍照守門、覆核流程、匯出解耦、維護介面
 8. [真實單據驗證樣本（已去識別化）](docs/08-real-receipt-samples.md) — 2026/09/02首次真實單據辨識驗證結果
 9. [川醉湘店內材料主檔與各廠商映射對照](docs/09-store-item-master-and-vendor-mapping.md) — 依真實單據建立的種子資料，見 [`data/`](data)
+10. [影像辨識API費用試算與備案方案](docs/10-vision-api-cost-backup-plan.md) — Claude實際收費公式、Haiku/Gemini/自架開源VLM系統化比較表、分層備案策略
 
 也可以直接開啟 `index.html`（分頁式整合版，含全部內容，適合快速瀏覽全貌）。
 
