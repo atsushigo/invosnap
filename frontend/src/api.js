@@ -5,6 +5,7 @@ async function handle(res) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `請求失敗 (${res.status})`);
   }
+  if (res.status === 204) return null; // DELETE成功但沒有回傳內容
   return res.json();
 }
 
@@ -47,6 +48,9 @@ export const api = {
 
   reopenReceipt: (receiptId) =>
     fetch(`${BASE}/receipts/${receiptId}/reopen`, { method: "POST" }).then(handle),
+
+  deleteReceipt: (receiptId) =>
+    fetch(`${BASE}/receipts/${receiptId}`, { method: "DELETE" }).then(handle),
 
   exportCsvUrl: () => `${BASE}/receipts/export/csv`,
 };

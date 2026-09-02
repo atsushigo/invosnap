@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, unlink } from "node:fs";
 import { dirname, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import db from "../db.js";
@@ -80,6 +80,9 @@ router.post("/recognize", upload.array("photos", 6), async (req, res) => {
     const ext = extname(file.originalname || "").toLowerCase();
     const mimeType = MIME_BY_EXT[ext] || file.mimetype;
     if (!Object.values(MIME_BY_EXT).includes(mimeType)) {
+      // multer已經把這批檔案（含格式對的其他頁）存到硬碟了，這裡不建立單據就直接
+      // return的話，全部都會變孤兒檔案，先清掉
+      for (const f of files) unlink(f.path, () => {});
       return res.status(400).json({ error: `不支援的圖片格式: ${ext || mimeType}（支援 jpg/png/webp）` });
     }
     images.push({ buffer: readFileSync(file.path), mimeType, filename: file.filename });
@@ -136,6 +139,12 @@ router.post("/recognize", upload.array("photos", 6), async (req, res) => {
     res.status(201).json(getReceiptWithLines(receiptId));
   } catch (err) {
     console.error("辨識失敗:", err);
+    // 辨識失敗代表沒有真的建立單據，剛剛multer已經存到硬碟的照片檔案會變成
+    // 沒有任何資料庫紀錄指向的孤兒檔案，永遠不會被清掉——這裡失敗時順手刪掉，
+    // 避免每次認證/額度/格式錯誤都在uploads/留下垃圾檔案
+    for (const file of files) {
+      unlink(file.path, () => {}); // 刪不掉也不影響回應使用者的錯誤訊息，忽略即可
+    }
     res.status(502).json({ error: err.message });
   }
 });
@@ -335,6 +344,35 @@ router.post("/:id/reopen", (req, res) => {
   }
   db.prepare("UPDATE receipts SET status = 'pending_review' WHERE id = ?").run(req.params.id);
   res.json(getReceiptWithLines(req.params.id));
+});
+
+// 整筆刪除單據（含明細、照片紀錄、實際照片檔案），用來清掉測試資料或建錯的單據。
+// 已確認入帳的單據不能直接刪，要先「重新開放編輯」退回待覆核狀態，避免不小心
+// 刪掉已經對過帳的紀錄
+router.delete("/:id", (req, res) => {
+  const receipt = db.prepare("SELECT * FROM receipts WHERE id = ?").get(req.params.id);
+  if (!receipt) return res.status(404).json({ error: "找不到這筆單據" });
+  if (receipt.status === "confirmed") {
+    return res.status(409).json({
+      error: "已確認入帳的單據不能直接刪除，請先「重新開放編輯」退回待覆核狀態再刪，避免誤刪已對過帳的紀錄。",
+      code: "receipt_locked",
+    });
+  }
+
+  const photoFiles = db.prepare("SELECT filename FROM receipt_photos WHERE receipt_id = ?").all(req.params.id);
+  const filenames = photoFiles.length > 0 ? photoFiles.map((p) => p.filename) : [receipt.photo_filename].filter(Boolean);
+
+  db.transaction(() => {
+    db.prepare("DELETE FROM receipt_lines WHERE receipt_id = ?").run(req.params.id);
+    db.prepare("DELETE FROM receipt_photos WHERE receipt_id = ?").run(req.params.id);
+    db.prepare("DELETE FROM receipts WHERE id = ?").run(req.params.id);
+  })();
+
+  for (const filename of filenames) {
+    unlink(join(UPLOAD_DIR, filename), () => {}); // 刪不掉也不影響回應，忽略即可
+  }
+
+  res.status(204).end();
 });
 
 export default router;

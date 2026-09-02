@@ -60,6 +60,7 @@ const visionConfigured = ref(null); // null=尚未查到，避免畫面一開始
 function onFileChange(event) {
   const files = Array.from(event.target.files || []);
   errorMessage.value = "";
+  revokeAllPreviews(); // 重選整批時，先把上一批的預覽網址釋放掉，不留著佔記憶體
   pages.value = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
 }
 
@@ -72,10 +73,16 @@ function movePage(index, delta) {
 }
 
 function removePage(index) {
+  URL.revokeObjectURL(pages.value[index].url);
   pages.value = pages.value.filter((_, i) => i !== index);
 }
 
+function revokeAllPreviews() {
+  for (const p of pages.value) URL.revokeObjectURL(p.url);
+}
+
 function reset() {
+  revokeAllPreviews();
   pages.value = [];
   errorMessage.value = "";
   if (fileInput.value) fileInput.value.value = "";
