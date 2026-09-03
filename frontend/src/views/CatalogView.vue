@@ -645,4 +645,13 @@ body:has(.catalog-view) main.content {
 .row-item .wide-input { flex: 1 1 160px; }
 button.small { padding: 5px 10px; font-size: 0.8rem; }
 button.danger { color: var(--low); border-color: var(--low); }
+
+@media (max-width: 640px) {
+  /* 圖示按鈕在手機上原本28px太小不好點，加大一點方便手指點擊 */
+  .icon-btn { width: 38px; height: 38px; font-size: 1rem; }
+  .card-actions { gap: 8px; }
+  .menu-grid { grid-template-columns: 1fr; }
+  .menu-search { min-width: 0; flex-basis: 100%; }
+  .form-row label, .form-row input[type="text"], .form-row select { min-width: 0; width: 100%; }
+}
 </style>

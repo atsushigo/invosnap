@@ -1,6 +1,6 @@
-const { chromium } = require("playwright");
-const fs = require("fs");
-const path = require("path");
+import { chromium } from "playwright";
+import fs from "node:fs";
+import path from "node:path";
 
 const BASE = "http://localhost:5174";
 const UPLOAD_DIR = "/home/owner/Desktop/invosnap/backend/uploads";
