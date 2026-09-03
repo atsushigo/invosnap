@@ -1,4 +1,4 @@
-# 12. 專案現況與交接筆記（2026-09-03，最後更新：新增主檔維護頁）
+# 12. 專案現況與交接筆記（2026-09-03，最後更新：Tailscale Funnel固定分享網址）
 
 給之後接續對話/新session用的「先看這篇」文件。對話上下文快滿時寫的，目的是讓下一個session不用重新爬梳整個對話記錄就能接手。
 
@@ -13,7 +13,32 @@ cd ~/Desktop/invosnap/backend && npm install && npm run dev   # 需要backend/.e
 cd ~/Desktop/invosnap/frontend && npm install && npm run dev  # 預設想用5173，通常被占用會改用5174
 ```
 
-前端會透過`vite.config.js`的proxy把`/api`和`/uploads`轉給後端(localhost:3001)。想讓別人（例如店長）用手機看，可以用`cloudflared tunnel --url http://localhost:5174`開一個臨時公開網址（本session之前用過`bids-vinyl-deemed-assignment.trycloudflare.com`，但那個網址是暫時的，session結束/electron重啟就會失效，需要重新產生）。
+前端會透過`vite.config.js`的proxy把`/api`和`/uploads`轉給後端(localhost:3001)。
+
+## 想讓店長從外部連進來看：兩種分享網址機制
+
+**方式一（目前主用）：Tailscale Funnel，固定網址**
+
+```bash
+tailscale funnel --bg 5174   # 需要先跑過一次 sudo tailscale up 登入、sudo tailscale set --operator=$USER
+```
+
+固定網址：**`https://[redacted-private-tailnet-host]/`**——跟這台機器(WSL裝置名`sam`)綁定，只要電腦開著、這個funnel程序還在跑，**網址永遠不變**，不用每次重新產生。這台WSL機器的Tailscale帳號是`[redacted-private-email]`（2026-09-03設定，同一個tailnet底下還有`[redacted-other-project-host]`那台trading-monorepo正式機，但完全是獨立的裝置，不會互相影響）。
+
+- 關掉分享：`tailscale funnel --https=443 off`
+- 檢查狀態：`tailscale funnel status` 或直接 `curl https://[redacted-private-tailnet-host]/api/health`
+- 這個網址**沒有密碼保護**，知道連結的人都能打開用
+- 電腦重開機後，Tailscale會自動重連，但`tailscale funnel --bg 5174`這個指令要重跑一次才會恢復對外服務（funnel設定不會自動存活過重開機，這點還沒驗證確認，之後可以觀察）
+
+**方式二（備用）：Cloudflare Quick Tunnel，臨時網址**
+
+```bash
+/tmp/cloudflared tunnel --url http://localhost:5174   # 二進位檔可能還在/tmp，沒有的話要重新下載
+```
+
+每次執行都會產生一個新的隨機網址（例如之前用過的`bids-vinyl-deemed-assignment.trycloudflare.com`），session結束就失效，需要重新產生。適合臨時展示，不適合長期分享。
+
+**兩種都需要**`frontend/vite.config.js`的`server.allowedHosts`裡有對應網域（已經加好`.trycloudflare.com`和`.ts.net`），這是Vite 5的安全機制，換了新的分享網域名稱記得檢查這裡有沒有涵蓋到，不然會出現「Blocked request」錯誤。
 
 ## 已完成的功能（程式碼層面）
 
@@ -32,6 +57,7 @@ cd ~/Desktop/invosnap/frontend && npm install && npm run dev  # 預設想用5173
 - `views/CatalogView.vue`（路由`/catalog`，導覽列「主檔維護」）— **新增（2026-09-03）**：把店內主檔／供應商／廠商對照表三份互相關聯的資料整合成一頁三個tab的CRUD介面，取代原本只能改`data/*.json`種子檔的方式。新增品項/供應商時代碼由後端自動產生（延續[09](09-store-item-master-and-vendor-mapping.md)的分類字首慣例），對照表的店內品項一樣是下拉選單不開放自由輸入。刪除有防呆（還被引用就擋掉）。對應後端`routes/catalog.js`新增的POST/PATCH/DELETE。細節見[07](07-key-modules-feasibility.md)模組五。
 - `components/ImageZoomViewer.vue` — 自寫的縮放/拖曳/全螢幕圖片檢視元件
 - `lib/vision-prompt.js`（專案根目錄，backend跟scripts共用）— system prompt組裝，含店內品項清單、生鮮業界通用簡稱、多頁/多紙本判斷邏輯、`total_pages_guess`欄位
+- **整體視覺改版（2026-09-03）**：`frontend/src/style.css`＋`App.vue`重新設計配色/陰影/圓角token（參考Uber Eats等電子平台的專業感），引入Google Fonts的Inter＋Noto Sans TC字型（`frontend/index.html`），導覽列改成sticky+毛玻璃背景+logo mark。因為大部分元件本來就用CSS變數引用同一套色票，只改全域token就讓四個頁面(拍照上傳/單據列表/覆核頁/主檔維護)一起提升質感，沒有逐頁重寫
 
 ## 目前的真實資料狀態
 
@@ -52,12 +78,16 @@ DB裡目前有2筆真實辨識過的單據（receipt id 7、8），使用者**�
 
 ## 還沒解決的事情（見docs/04、docs/11完整清單）
 
-1. **待店長回答的問題已經整理成Google文件**：`InvoSnap 進貨快照 — 待店長確認事項`（https://docs.google.com/document/d/1Jgz5WUQca6zjCD40xU11UjBXgNQRu_JAkxCWdkxVXx4/edit），分成「店內主檔／廠商對照表／廠商基本資料／POS／單位換算」6題，還沒設定分享權限給店長（要用email加成編輯者、還是開連結分享，使用者還沒回覆）。**下一個session先去看這份文件有沒有新回覆**，比重新問一次快。
-   - 已經在對話中確認（不用再問）：新品項/新供應商流程＝當下手動建立對照＋之後要有統一整理功能（就是這次新增的`/catalog`頁）；API費用由誰付先不問，還在試驗階段。
-2. **POS系統是否支援匯入、匯入格式** — 完全未知，已列進上面的Google文件第5題
-3. **供應商單據範例** — 目前只驗證過3家供應商（鮮味嘉、雄泉鮮食、阿凱生蔬），店長最多有5家供應商，還有1~2家沒看過格式，已列進Google文件第4題
-4. **Hetzner雲端部署** — 使用者說之後再議，先確保本機部署順利。已有的判斷：不要跟`[redacted-other-project-host]`（trading-monorepo正式環境）共用機器，見docs/11
-5. **多頁單子的doc-tabs功能還沒用真實多頁資料測過** — 目前只用假資料驗證UI邏輯，receipt 7/8是改這個功能*之前*辨識的舊資料，沒有page_number分類；等使用者重新上傳，可以看到真正的效果
+1. **待店長回答的問題已經整理成Google文件**（2026-09-03最新版，語氣已柔化成對店長比較有禮貌的用詞、POS那題移到最後標註不急）：`InvoSnap 進貨快照 — 待店長確認事項`——**目前正確連結：https://docs.google.com/document/d/[redacted-doc-id]/edit**（擁有者是`[redacted-private-email]`，這是使用者的私人帳號，跟本機Claude Code的Google Drive連接器綁定的帳號是同一個）。分成「店內主檔／廠商對照表(2題)／廠商基本資料／換算包裝規則／POS」6題。
+   - 使用者手動把4張截圖（見下方）貼進了這份文件，但版面因為圖片太大跑掉了，已經給使用者手動調整版面的步驟（縮小成2x2表格），**還沒確認使用者有沒有實際弄完**，下次接手可以問一下或直接開連結看
+   - 已經在對話中確認（不用再問）：新品項/新供應商流程＝當下手動建立對照＋之後要有統一整理功能（就是`/catalog`頁）；API費用由誰付先不問，還在試驗階段
+   - 分享權限：目前只有`[redacted-private-email]`能編輯，**店長本人還沒有這份文件的存取權**，使用者說要直接發連結給店長（連結沒設「知道連結可編輯」，要嘛加店長email、要嘛之後去開連結分享）
+2. **給店長的系統畫面預覽截圖**：4張存在`docs/store-manager-preview/`（repo裡）＋Windows桌面`invosnap-店長預覽截圖`資料夾，用來讓店長在正式試用前先看一下系統長怎樣，用意見docs/07/本篇
+3. **讓店長從外部直接試用系統**：見上方「想讓店長從外部連進來看」，目前有Tailscale Funnel固定網址可以直接給店長，**但還沒實際發給店長、也還沒讓他點開實測過**
+4. **POS系統是否支援匯入、匯入格式** — 完全未知，已列進Google文件
+5. **供應商單據範例** — 目前只驗證過3家供應商（鮮味嘉、雄泉鮮食、阿凱生蔬），店長最多有5家供應商，還有1~2家沒看過格式，已列進Google文件
+6. **Hetzner雲端部署** — 使用者說之後再議，先確保本機部署順利。已有的判斷：不要跟`[redacted-other-project-host]`（trading-monorepo正式環境）共用機器，見docs/11
+7. **多頁單子的doc-tabs功能還沒用真實多頁資料測過** — 目前只用假資料驗證UI邏輯，receipt 7/8是改這個功能*之前*辨識的舊資料，沒有page_number分類；等使用者重新上傳，可以看到真正的效果
 
 ## 文件索引（完整版見README.md）
 
