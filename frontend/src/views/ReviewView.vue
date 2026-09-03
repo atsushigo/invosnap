@@ -32,7 +32,7 @@
         </p>
 
         <p v-if="amountMismatch" class="error-box">
-          明細加總 {{ lineSum }}，跟單據上寫的總額 {{ receipt.total_amount_on_receipt }} 對不上，請對照左側照片特別注意。
+          明細加總 {{ lineSum }}，跟單據上寫的總額 {{ receipt.total_amount_on_receipt }} 對不上，請對照{{ photoPositionLabel }}照片特別注意。
         </p>
         <p v-if="missingPagesWarning" class="error-box">
           系統判斷這張單據共 {{ receipt.total_pages_guess }} 頁，但目前只有 {{ receipt.photos?.length || 0 }} 張照片，
@@ -79,12 +79,15 @@
             :disabled="readonly"
             @change="onFieldChange(line, 'name_raw', $event.target.value)"
           />
-          <span :class="['badge', line.confidence]">{{ confidenceLabel(line.confidence) }}</span>
+          <span class="confidence-wrap" :title="`辨識信心：${confidenceLabel(line.confidence)}，信心低的品項建議特別核對數字`">
+            <span class="confidence-label">信心</span>
+            <span :class="['badge', line.confidence]">{{ confidenceLabel(line.confidence) }}</span>
+          </span>
           <button
             v-if="receipt.photos && receipt.photos.length > 1 && line.page_number"
             class="page-badge"
             :class="{ active: activePage === line.page_number }"
-            title="點一下切換左側照片到這一頁"
+            :title="`點一下切換${photoPositionLabel}照片到這一頁`"
             @click="activePage = line.page_number"
           >
             第{{ line.page_number }}頁
@@ -136,14 +139,17 @@
         </div>
 
         <div class="line-card-bottom">
-          <select class="match" :value="line.store_item_code || ''" :disabled="readonly" @change="onStoreItemChange(line, $event.target.value)">
-            <option value="">（未對應，需新增品項）</option>
-            <optgroup v-for="group in groupedStoreItems" :key="group.category" :label="group.category">
-              <option v-for="item in group.items" :key="item.code" :value="item.code">
-                {{ item.name }}
-              </option>
-            </optgroup>
-          </select>
+          <label class="field match-field">
+            <span>對應到店內品項</span>
+            <select class="match" :value="line.store_item_code || ''" :disabled="readonly" @change="onStoreItemChange(line, $event.target.value)">
+              <option value="">（未對應，需新增品項）</option>
+              <optgroup v-for="group in groupedStoreItems" :key="group.category" :label="group.category">
+                <option v-for="item in group.items" :key="item.code" :value="item.code">
+                  {{ item.name }}
+                </option>
+              </optgroup>
+            </select>
+          </label>
           <label class="confirm-check">
             <input
               type="checkbox"
@@ -191,7 +197,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 import { api } from "../api.js";
 import ImageZoomViewer from "../components/ImageZoomViewer.vue";
 
@@ -208,6 +214,16 @@ const activePage = ref(1); // 目前左側照片顯示第幾頁，可由頁籤�
 const selectedDocTab = ref("all"); // "all" 或 page_number，篩選右側只顯示某一張單子的品項
 
 const readonly = computed(() => receipt.value?.status === "confirmed");
+
+// 版面在860px以下會從左右分割切換成上下堆疊（見底下@media），照片會跑到「上方」而不是
+// 「左側」，文案要跟著版面動態換字，不然窄螢幕上會出現「請對照左側照片」但照片明明在上面
+// 的矛盾說法（見docs/12的fanout審查發現）
+const stackedLayout = ref(false);
+let layoutQuery;
+function onLayoutChange(e) {
+  stackedLayout.value = e.matches;
+}
+const photoPositionLabel = computed(() => (stackedLayout.value ? "上方" : "左側"));
 
 const activePhotoUrl = computed(() => {
   const photos = receipt.value?.photos || [];
@@ -330,6 +346,14 @@ function cancelAddLine() {
 }
 
 async function confirmReceipt() {
+  // 明細加總跟單據總額對不上時，即使上面已經有紅字警告，還是要在按下確認入帳的當下
+  // 再攔一次，避免店長沒注意到警告文字就直接送出（見docs/12的fanout審查發現）
+  if (amountMismatch.value) {
+    const proceed = window.confirm(
+      `明細加總 ${lineSum.value}，跟單據上寫的總額 ${receipt.value.total_amount_on_receipt} 對不上，確定要這樣送出確認入帳嗎？`
+    );
+    if (!proceed) return;
+  }
   submitting.value = true;
   errorMessage.value = "";
   try {
@@ -353,7 +377,15 @@ async function reopen() {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  load();
+  layoutQuery = window.matchMedia("(max-width: 860px)");
+  stackedLayout.value = layoutQuery.matches;
+  layoutQuery.addEventListener("change", onLayoutChange);
+});
+onUnmounted(() => {
+  layoutQuery?.removeEventListener("change", onLayoutChange);
+});
 </script>
 
 <style scoped>
@@ -466,7 +498,7 @@ onMounted(load);
 .line-card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   margin-bottom: 10px;
 }
@@ -535,9 +567,29 @@ onMounted(load);
   padding-top: 10px;
   border-top: 1px dashed var(--border);
 }
-.line-card-bottom .match {
+.match-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   flex: 1 1 200px;
   min-width: 0;
+}
+.match-field span {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+.line-card-bottom .match {
+  min-width: 0;
+  width: 100%;
+}
+.confidence-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.confidence-label {
+  font-size: 0.68rem;
+  color: var(--text-dim);
 }
 .confirm-check {
   display: flex;

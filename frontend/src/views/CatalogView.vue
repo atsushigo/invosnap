@@ -566,9 +566,9 @@ body:has(.catalog-view) main.content {
 .menu-card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   padding: 14px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -592,9 +592,9 @@ body:has(.catalog-view) main.content {
 }
 .code-tag {
   font-family: monospace;
-  background: #efe7dd;
+  background: var(--border);
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 0.74rem;
   white-space: nowrap;
 }
@@ -644,7 +644,7 @@ body:has(.catalog-view) main.content {
 .row-item .note { font-style: italic; }
 .row-item .wide-input { flex: 1 1 160px; }
 button.small { padding: 5px 10px; font-size: 0.8rem; }
-button.danger { color: var(--low); border-color: var(--low); }
+button.danger { color: var(--low); border-color: var(--low-bg); }
 
 @media (max-width: 640px) {
   /* 圖示按鈕在手機上原本28px太小不好點，加大一點方便手指點擊 */

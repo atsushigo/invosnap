@@ -223,7 +223,15 @@ router.get("/export/csv", (req, res) => {
     .all();
 
   const header = "日期,供應商,品項代碼,品項名稱,數量,單位,單價,金額,備註";
-  const csvEscape = (v) => (v == null ? "" : `"${String(v).replaceAll('"', '""')}"`);
+  // 防CSV公式注入：內容以 =+-@ 開頭的話，Excel/Numbers開啟時可能被當成公式執行（例如有人在送貨單
+  // 旁塞一張寫著=HYPERLINK(...)的紙一起拍進去，文字會原封不動存進資料庫再匯出）。開頭補一個
+  // 全形空白字元擋掉，不影響人眼閱讀，但讓試算表軟體不會把它解讀成公式起始符號
+  const csvEscape = (v) => {
+    if (v == null) return "";
+    let s = String(v);
+    if (/^[=+\-@]/.test(s)) s = "　" + s;
+    return `"${s.replaceAll('"', '""')}"`;
+  };
   const lines = rows.map((r) => {
     const notesText = parseNotesForResponse(r.notes).join(" / ");
     return [r.date_guess, r.vendor_name, r.store_item_code, r.item_name, r.qty_raw, r.unit, r.unit_price_raw, r.amount_raw, notesText]
@@ -252,7 +260,7 @@ router.patch("/:id/lines/:lineId", (req, res) => {
   const result = db
     .prepare(
       `UPDATE receipt_lines SET
-         store_item_code = COALESCE(@store_item_code, store_item_code),
+         store_item_code = CASE WHEN @store_item_code_set = 1 THEN @store_item_code ELSE store_item_code END,
          confirmed = COALESCE(@confirmed, confirmed),
          name_raw = COALESCE(@name_raw, name_raw),
          qty_raw = COALESCE(@qty_raw, qty_raw),
@@ -262,6 +270,9 @@ router.patch("/:id/lines/:lineId", (req, res) => {
        WHERE id = @lineId AND receipt_id = @receiptId`
     )
     .run({
+      // store_item_code需要能被明確清成null（例如店長取消一個錯誤的品項對應），
+      // 跟其他欄位的「undefined代表不更新」語意不同，用一個旗標區分「沒傳」跟「傳了null」
+      store_item_code_set: store_item_code !== undefined ? 1 : 0,
       store_item_code: store_item_code ?? null,
       confirmed: confirmed === undefined ? null : confirmed ? 1 : 0,
       name_raw: name_raw ?? null,
@@ -298,6 +309,14 @@ router.post("/:id/lines", (req, res) => {
   const { name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, store_item_code, page_number } = req.body;
   if (!name_raw) return res.status(400).json({ error: "手動新增的品項需要填品名" });
 
+  // 跟辨識流程(第123行)一樣，手動新增的頁碼也要限制在這張單據實際有的照片頁數內，
+  // 不然UI依page_number去對照照片時會找不到對應的照片
+  const photoCount = db.prepare("SELECT COUNT(*) AS n FROM receipt_photos WHERE receipt_id = ?").get(req.params.id).n;
+  const validPage =
+    Number.isInteger(page_number) && page_number >= 1 && (photoCount === 0 || page_number <= photoCount)
+      ? page_number
+      : null;
+
   const info = db
     .prepare(
       `INSERT INTO receipt_lines (receipt_id, vendor_item_code, name_raw, qty_raw, unit_raw, unit_price_raw, amount_raw, matched_store_item_code_guess, store_item_code, confidence, confirmed, page_number)
@@ -311,7 +330,7 @@ router.post("/:id/lines", (req, res) => {
       unit_price_raw ?? null,
       amount_raw ?? null,
       store_item_code ?? null,
-      Number.isInteger(page_number) ? page_number : null
+      validPage
     );
   res.status(201).json({ ...getReceiptWithLines(req.params.id), newLineId: info.lastInsertRowid });
 });
@@ -322,6 +341,9 @@ router.post("/:id/confirm", (req, res) => {
   if (!receipt) return res.status(404).json({ error: "找不到這筆單據" });
   if (receipt.status === "confirmed") {
     return res.status(409).json({ error: "這筆單據已經確認過了" });
+  }
+  if (receipt.lines.length === 0) {
+    return res.status(409).json({ error: "這筆單據沒有任何明細，不能確認入帳（辨識沒抓到品項，或明細都被刪掉了，請先手動新增至少一筆）" });
   }
   const unconfirmed = receipt.lines.filter((l) => !l.confirmed);
   if (unconfirmed.length > 0) {
@@ -342,7 +364,12 @@ router.post("/:id/reopen", (req, res) => {
   if (receipt.status !== "confirmed") {
     return res.status(409).json({ error: "只有已確認入帳的單據才需要重新開放編輯" });
   }
-  db.prepare("UPDATE receipts SET status = 'pending_review' WHERE id = ?").run(req.params.id);
+  // 一併把每一列的已確認勾選重置，逼店長重新看過、重新勾一次才能再次送出確認入帳，
+  // 不然只改一列不勾confirmed的話，其他列還留著上次的已確認狀態，等於沒有真的重新覆核
+  db.transaction(() => {
+    db.prepare("UPDATE receipts SET status = 'pending_review' WHERE id = ?").run(req.params.id);
+    db.prepare("UPDATE receipt_lines SET confirmed = 0 WHERE receipt_id = ?").run(req.params.id);
+  })();
   res.json(getReceiptWithLines(req.params.id));
 });
 

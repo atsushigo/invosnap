@@ -3,8 +3,8 @@ import path from "node:path";
 import fs from "node:fs";
 
 const BASE = "http://localhost:5174";
-const TWO_PHOTO_RECEIPT_ID = 18; // 需要真的有2張receipt_photos的單據，見 seed-fixtures.js fixture A
-const SINGLE_PAGE_RECEIPT_ID = 20; // 隨便一筆單頁單據，測「不該顯示分頁UI」
+const TWO_PHOTO_RECEIPT_ID = 32; // 需要真的有2張receipt_photos的單據，見 seed-fixtures.js fixture A
+const SINGLE_PAGE_RECEIPT_ID = 34; // 隨便一筆單頁單據，測「不該顯示分頁UI」
 const errors = [];
 function assert(cond, msg) {
   if (!cond) errors.push(msg);

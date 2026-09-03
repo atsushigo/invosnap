@@ -29,9 +29,18 @@
     <!-- 手機版選單：漢堡按鈕點開的下拉面板，連結是全寬大按鈕，方便手指點 -->
     <div v-if="menuOpen" class="nav-drawer-backdrop" @click="menuOpen = false"></div>
     <div class="nav-drawer" :class="{ open: menuOpen }">
-      <router-link to="/upload" @click="menuOpen = false">拍照上傳</router-link>
-      <router-link to="/receipts" @click="menuOpen = false">單據列表</router-link>
-      <router-link to="/catalog" @click="menuOpen = false">主檔維護</router-link>
+      <router-link to="/upload" @click="menuOpen = false">
+        拍照上傳
+        <small>掃描並辨識送貨單</small>
+      </router-link>
+      <router-link to="/receipts" @click="menuOpen = false">
+        單據列表
+        <small>查看、確認、匯出</small>
+      </router-link>
+      <router-link to="/catalog" @click="menuOpen = false">
+        主檔維護
+        <small>新增品項或供應商</small>
+      </router-link>
     </div>
 
     <main class="content">

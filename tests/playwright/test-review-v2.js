@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 
 const BASE = "http://localhost:5174";
-const RECEIPT_ID = 20; // 需要一筆20品項左右的多品項單頁單據（測欄寬/optgroup/新增品項）
+const RECEIPT_ID = 34; // 需要一筆20品項左右的多品項單頁單據（測欄寬/optgroup/新增品項）
 const errors = [];
 function assert(cond, msg) {
   if (!cond) errors.push(msg);

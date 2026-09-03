@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 
 const BASE = "http://localhost:5174";
-const RECEIPT_ID = 20; // 需要一筆一般的4品項單頁單據，見 seed-fixtures.js 或直接用真實receipt
+const RECEIPT_ID = 34; // 需要一筆一般的4品項單頁單據，見 seed-fixtures.js 或直接用真實receipt
 const errors = [];
 function assert(cond, msg) {
   if (!cond) errors.push(msg);

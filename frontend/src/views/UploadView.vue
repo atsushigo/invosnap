@@ -135,9 +135,9 @@ onMounted(async () => {
   margin-top: 14px;
 }
 .page-thumb {
-  width: 150px;
+  width: 176px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 8px;
   text-align: center;
 }
@@ -168,8 +168,8 @@ onMounted(async () => {
   justify-content: center;
 }
 button.small {
-  padding: 3px 7px;
-  font-size: 0.75rem;
+  padding: 5px 10px;
+  font-size: 0.82rem;
 }
 button.secondary.danger {
   color: var(--low);

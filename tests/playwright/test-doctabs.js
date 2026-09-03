@@ -1,7 +1,7 @@
 import { chromium } from "playwright";
 
 const BASE = "http://localhost:5174";
-const RECEIPT_ID = 19; // 需要一筆total_pages_guess>photos.length、品項有跨3個page_number的單據，見 seed-fixtures.js fixture B
+const RECEIPT_ID = 33; // 需要一筆total_pages_guess>photos.length、品項有跨3個page_number的單據，見 seed-fixtures.js fixture B
 const errors = [];
 function assert(cond, msg) {
   if (!cond) errors.push(msg);
