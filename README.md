@@ -25,6 +25,7 @@ InvoSnap 是一個獨立於總部POS之外的輔助小工具：手機拍照 → 
 10. [影像辨識API費用試算與備案方案](docs/10-vision-api-cost-backup-plan.md) — Claude實際收費公式、Haiku/Gemini/自架開源VLM系統化比較表、分層備案策略
 11. [待你Review的事項清單](docs/11-review-checklist.md) — 目前卡點總盤點，含Hetzner部署風險提醒
 12. [專案現況與交接筆記](docs/12-project-status-and-handoff.md) — **對話上下文快滿/接續新session先看這篇**
+13. [Fanout多角度審查與修復記錄](docs/13-fanout-review-2026-09-04.md) — 5角度平行審查+對抗性驗證，18項發現與修復記錄
 
 也可以直接開啟 `index.html`（分頁式整合版，含全部內容，適合快速瀏覽全貌，發布版：[Artifact連結](https://claude.ai/code/artifact/ac79de66-9fc8-4f33-b53b-24dd6e826dd6)）。
 
