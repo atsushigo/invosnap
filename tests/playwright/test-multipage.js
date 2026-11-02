@@ -60,7 +60,8 @@ function assert(cond, msg) {
   const fileInput = page.locator('input[type="file"]');
   assert(await fileInput.evaluate((el) => el.multiple === true), "上傳頁的檔案選取器允許多選(multiple屬性)");
 
-  const samplePhotoDir = "/mnt/c/Users/Owner/Downloads/川醉湘 進貨單";
+  // 本機測試用：設定INVOSNAP_SAMPLE_PHOTOS_DIR指向一個含至少2張照片的資料夾即可跑這段；沒設定就跳過（見下方try/catch）
+  const samplePhotoDir = process.env.INVOSNAP_SAMPLE_PHOTOS_DIR || "";
   let filesToUse = [];
   try {
     filesToUse = fs.readdirSync(samplePhotoDir).slice(0, 2).map((f) => path.join(samplePhotoDir, f));

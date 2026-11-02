@@ -2,6 +2,7 @@
   "name": "invosnap-playwright-tests",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "description": "覆核頁/多頁單子/刪除單據等功能的Playwright回歸測試，見README.md",
   "dependencies": {

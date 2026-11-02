@@ -2,6 +2,7 @@
   "name": "invosnap-backend",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "description": "InvoSnap 後端 API：拍照辨識、供應商對照、覆核確認、匯出（見 docs/03-architecture-proposal.md）",
   "type": "module",
   "main": "src/server.js",

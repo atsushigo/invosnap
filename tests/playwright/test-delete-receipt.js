@@ -1,9 +1,10 @@
 import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const BASE = "http://localhost:5174";
-const UPLOAD_DIR = "/home/owner/Desktop/invosnap/backend/uploads";
+const UPLOAD_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "backend", "uploads");
 const errors = [];
 function assert(cond, msg) {
   if (!cond) errors.push(msg);

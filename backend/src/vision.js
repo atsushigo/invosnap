@@ -56,7 +56,8 @@ function friendlyVisionError(err) {
   if (raw.includes("Unexpected token") || raw.includes("JSON")) {
     return "模型回傳的內容不是預期的JSON格式，可能是照片太模糊或角度太特殊，換一張照片再試試看。";
   }
-  return `辨識失敗：${raw}`;
+  console.error("[vision] 未分類錯誤：", raw);
+  return "辨識失敗，發生未預期的錯誤，請稍後再試一次；如持續發生請聯絡開發者。";
 }
 
 /**

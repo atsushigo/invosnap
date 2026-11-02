@@ -6,7 +6,13 @@ import receiptsRouter, { UPLOAD_DIR } from "./routes/receipts.js";
 import { isVisionConfigured } from "./vision.js";
 
 const app = express();
-app.use(cors());
+// 預設只開放本機前端dev port，想從其他網域直接打API（例如另外架前端）時用這個env var加白名單，
+// 避免用cors()預設值（反射允許任意來源），讓任何網頁的JS都能直接呼叫這支API讀寫資料
+const allowedOrigins = (process.env.INVOSNAP_CORS_ORIGINS || "http://localhost:5173,http://localhost:5174")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => res.json({ ok: true, vision_configured: isVisionConfigured() }));

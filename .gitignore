@@ -7,3 +7,9 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 .env
 *.local
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+npm-debug.log*
