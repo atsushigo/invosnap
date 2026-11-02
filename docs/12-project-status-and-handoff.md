@@ -17,10 +17,19 @@ cd ~/Desktop/invosnap/frontend && npm install && npm run dev  # 預設想用5173
 
 ## 想讓店長從外部連進來看：兩種分享網址機制
 
+**重要（2026-11-03起）：對外分享一律走production build，不要再把vite dev server曝露出去**。之前是直接把`vite dev`（port 5174）透過Tailscale Funnel對外開放，但dev server本來就不是設計給公開曝露在網路上的（`npm audit`查到好幾個跟dev server直接相關的已知漏洞，包含「專案路徑跟系統路徑重疊時，`server.fs.allow`之外的檔案可能被讀到」這類路徑穿越問題）。現在改成：
+
+```bash
+cd ~/Desktop/invosnap/frontend && npm run build   # 產生 frontend/dist/，backend/src/server.js偵測到這個資料夾存在就會一起伺服
+cd ~/Desktop/invosnap/backend && npm run dev       # 單一port(3001)同時伺服前端靜態檔+API，不用再另外跑vite dev
+```
+
+前端程式碼有改動、要更新對外看到的版本時，記得重新`npm run build`一次（backend不用重啟，`express.static`會讀到新的dist內容）。
+
 **方式一（目前主用）：Tailscale Funnel，固定網址**
 
 ```bash
-tailscale funnel --bg 5174   # 需要先跑過一次 sudo tailscale up 登入、sudo tailscale set --operator=$USER
+tailscale funnel --bg 3001   # 指向backend的port，不是frontend；需要先跑過一次 sudo tailscale up 登入、sudo tailscale set --operator=$USER
 ```
 
 固定網址：跟這台機器(WSL裝置名`sam`)綁定，只要電腦開著、這個funnel程序還在跑，**網址永遠不變**，不用每次重新產生（實際網址基於隱私考量不寫進公開repo，問使用者或查本機Tailscale設定）。
@@ -28,22 +37,22 @@ tailscale funnel --bg 5174   # 需要先跑過一次 sudo tailscale up 登入、
 - 關掉分享：`tailscale funnel --https=443 off`
 - 檢查狀態：`tailscale funnel status` 或直接 `curl <你的tailnet網址>/api/health`
 - 這個網址**沒有密碼保護**，知道連結的人都能打開用
-- 電腦重開機後，Tailscale會自動重連，但`tailscale funnel --bg 5174`這個指令要重跑一次才會恢復對外服務（funnel設定不會自動存活過重開機，這點還沒驗證確認，之後可以觀察）
+- 電腦重開機後，Tailscale會自動重連，但`tailscale funnel --bg 3001`這個指令要重跑一次才會恢復對外服務（funnel設定不會自動存活過重開機，這點還沒驗證確認，之後可以觀察）
 
 **方式二（備用）：Cloudflare Quick Tunnel，臨時網址**
 
 ```bash
-/tmp/cloudflared tunnel --url http://localhost:5174   # 二進位檔可能還在/tmp，沒有的話要重新下載
+/tmp/cloudflared tunnel --url http://localhost:3001   # 二進位檔可能還在/tmp，沒有的話要重新下載
 ```
 
 每次執行都會產生一個新的隨機網址（例如之前用過的`bids-vinyl-deemed-assignment.trycloudflare.com`），session結束就失效，需要重新產生。適合臨時展示，不適合長期分享。
 
-**兩種都需要**`frontend/vite.config.js`的`server.allowedHosts`裡有對應網域（已經加好`.trycloudflare.com`和`.ts.net`），這是Vite 5的安全機制，換了新的分享網域名稱記得檢查這裡有沒有涵蓋到，不然會出現「Blocked request」錯誤。
+**兩種都不需要再管`frontend/vite.config.js`的`server.allowedHosts`**——那是vite dev server的安全機制，改成Express伺服production build之後就不適用了（`allowedHosts`設定還留著，是給單純本機開發、沒有要對外分享時用的`npm run dev`）。
 
 ## 已完成的功能（程式碼層面）
 
 **後端**（`backend/src/`）：
-- `server.js` — Express入口，`/api/health`、`/api/catalog/*`、`/api/receipts/*`、靜態伺服`/uploads`
+- `server.js` — Express入口，`/api/health`、`/api/catalog/*`、`/api/receipts/*`、靜態伺服`/uploads`；`frontend/dist/`存在時也會一起伺服（production build）+ SPA路由fallback，CORS改成白名單（`INVOSNAP_CORS_ORIGINS`可覆寫，預設只開本機dev port）
 - `routes/receipts.js` — 拍照辨識(`POST /recognize`，支援多檔=多頁)、單據列表/詳情、覆核修正(`PATCH lines/:id`可訂正原始欄位)、刪除單一列、手動新增列、確認入帳、重新開放編輯、**整筆刪除單據**(`DELETE /:id`，含照片檔案)
 - `routes/catalog.js` — 供應商/店內品項/對照表清單
 - `vision.js` — 呼叫Claude Vision API，內含：sharp resize、多圖一次呼叫、寬鬆JSON解析（處理markdown包裝）、`stop_reason`截斷偵測、各種錯誤訊息中文化（缺key/workspace-id/額度不足/限流等）
