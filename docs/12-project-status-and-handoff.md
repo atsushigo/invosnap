@@ -23,10 +23,10 @@ cd ~/Desktop/invosnap/frontend && npm install && npm run dev  # 預設想用5173
 tailscale funnel --bg 5174   # 需要先跑過一次 sudo tailscale up 登入、sudo tailscale set --operator=$USER
 ```
 
-固定網址：**`https://[redacted-private-tailnet-host]/`**——跟這台機器(WSL裝置名`sam`)綁定，只要電腦開著、這個funnel程序還在跑，**網址永遠不變**，不用每次重新產生。這台WSL機器的Tailscale帳號是`[redacted-private-email]`（2026-09-03設定，同一個tailnet底下還有`[redacted-other-project-host]`那台trading-monorepo正式機，但完全是獨立的裝置，不會互相影響）。
+固定網址：跟這台機器(WSL裝置名`sam`)綁定，只要電腦開著、這個funnel程序還在跑，**網址永遠不變**，不用每次重新產生（實際網址基於隱私考量不寫進公開repo，問使用者或查本機Tailscale設定）。
 
 - 關掉分享：`tailscale funnel --https=443 off`
-- 檢查狀態：`tailscale funnel status` 或直接 `curl https://[redacted-private-tailnet-host]/api/health`
+- 檢查狀態：`tailscale funnel status` 或直接 `curl <你的tailnet網址>/api/health`
 - 這個網址**沒有密碼保護**，知道連結的人都能打開用
 - 電腦重開機後，Tailscale會自動重連，但`tailscale funnel --bg 5174`這個指令要重跑一次才會恢復對外服務（funnel設定不會自動存活過重開機，這點還沒驗證確認，之後可以觀察）
 
@@ -78,15 +78,15 @@ DB裡目前有2筆真實辨識過的單據（receipt id 7、8），使用者**�
 
 ## 還沒解決的事情（見docs/04、docs/11完整清單）
 
-1. **待店長回答的問題已經整理成Google文件**（2026-09-03最新版，語氣已柔化成對店長比較有禮貌的用詞、POS那題移到最後標註不急）：`InvoSnap 進貨快照 — 待店長確認事項`——**目前正確連結：https://docs.google.com/document/d/[redacted-doc-id]/edit**（擁有者是`[redacted-private-email]`，這是使用者的私人帳號，跟本機Claude Code的Google Drive連接器綁定的帳號是同一個）。分成「店內主檔／廠商對照表(2題)／廠商基本資料／換算包裝規則／POS」6題。
+1. **待店長回答的問題已經整理成Google文件**（2026-09-03最新版，語氣已柔化成對店長比較有禮貌的用詞、POS那題移到最後標註不急）：`InvoSnap 進貨快照 — 待店長確認事項`——連結基於隱私考量不寫進公開repo，問使用者（擁有者是使用者私人Google帳號，跟本機Claude Code的Google Drive連接器綁定的帳號是同一個）。分成「店內主檔／廠商對照表(2題)／廠商基本資料／換算包裝規則／POS」6題。
    - 使用者手動把4張截圖（見下方）貼進了這份文件，但版面因為圖片太大跑掉了，已經給使用者手動調整版面的步驟（縮小成2x2表格），**還沒確認使用者有沒有實際弄完**，下次接手可以問一下或直接開連結看
    - 已經在對話中確認（不用再問）：新品項/新供應商流程＝當下手動建立對照＋之後要有統一整理功能（就是`/catalog`頁）；API費用由誰付先不問，還在試驗階段
-   - 分享權限：目前只有`[redacted-private-email]`能編輯，**店長本人還沒有這份文件的存取權**，使用者說要直接發連結給店長（連結沒設「知道連結可編輯」，要嘛加店長email、要嘛之後去開連結分享）
+   - 分享權限：目前只有使用者本人能編輯，**店長本人還沒有這份文件的存取權**，使用者說要直接發連結給店長（連結沒設「知道連結可編輯」，要嘛加店長email、要嘛之後去開連結分享）
 2. **給店長的系統畫面預覽截圖**：4張存在`docs/store-manager-preview/`（repo裡）＋Windows桌面`invosnap-店長預覽截圖`資料夾，用來讓店長在正式試用前先看一下系統長怎樣，用意見docs/07/本篇
 3. **讓店長從外部直接試用系統**：見上方「想讓店長從外部連進來看」，目前有Tailscale Funnel固定網址可以直接給店長，**但還沒實際發給店長、也還沒讓他點開實測過**。`/api/receipts/recognize`目前沒有任何驗證/流量限制（fanout審查發現的，見[13](13-fanout-review-2026-09-04.md)），使用者評估後**刻意決定不加防護**——只有使用者跟店長知道網址，且API key只儲值US$5沒有自動加值，最壞情況燒完$5，風險可接受
 4. **POS系統是否支援匯入、匯入格式** — 完全未知，已列進Google文件
 5. **供應商單據範例** — 目前只驗證過3家供應商（鮮味嘉、雄泉鮮食、阿凱生蔬），店長最多有5家供應商，還有1~2家沒看過格式，已列進Google文件
-6. **Hetzner雲端部署** — 使用者說之後再議，先確保本機部署順利。已有的判斷：不要跟`[redacted-other-project-host]`（trading-monorepo正式環境）共用機器，見docs/11
+6. **Hetzner雲端部署** — 使用者說之後再議，先確保本機部署順利。已有的判斷：不要跟使用者既有的另一個正式環境共用機器，見docs/11
 7. **多頁單子的doc-tabs功能還沒用真實多頁資料測過** — 目前只用假資料驗證UI邏輯，receipt 7/8是改這個功能*之前*辨識的舊資料，沒有page_number分類；等使用者重新上傳，可以看到真正的效果
 
 ## 文件索引（完整版見README.md）

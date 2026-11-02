@@ -1242,7 +1242,7 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
   <h2>五、部署順序更新</h2>
   <p>依補充意見，部署順序改為：<strong>先在本機/店內電腦跑通MVP，驗證整條流程沒問題後，再遷移到小型雲主機</strong>。這個順序不影響任何程式碼設計——架構本來就是「SQLite本機檔案優先」，等本機驗證穩定後，把SQLite檔案搬到雲主機上即可銜接第二階段，見已更新的「04·系統架構提案」部署建議段落。</p>
   <div class="callout">
-    <strong>雲端主機選擇（2026-09-02補充）</strong>：你確認上雲會用Hetzner。但你目前的Hetzner伺服器 <code>[redacted-other-project-host]</code> 是另一個專案 trading-monorepo 的正式環境，正在跑即時交易機器人，強烈建議InvoSnap不要跟它共用機器，另外開一台入門級新機器（CX22等級即可，月費約€4~5）專門跑InvoSnap。細節見下一篇「11·待你Review清單」。
+    <strong>雲端主機選擇（2026-09-02補充）</strong>：你確認上雲會用Hetzner。但你另外有一台Hetzner伺服器是別的專案的正式環境，強烈建議InvoSnap不要跟它共用機器，另外開一台入門級新機器（CX22等級即可，月費約€4~5）專門跑InvoSnap。細節見下一篇「11·待你Review清單」。
   </div>
 
   <div class="footer-nav">
@@ -1256,17 +1256,12 @@ node claude-vision-ocr.js ./sample-receipt.jpg</code></pre>
   <h1>11 · 待你 Review 的事項清單</h1>
   <p class="page-desc">2026-09-02 盤點：哪些地方需要你檢查/拍板才能繼續往下走</p>
 
-  <h2>一、雲端部署：Hetzner，但建議跟 trading-monorepo 分開機器</h2>
-  <p>你提到上雲要用Hetzner，因為side projects都部署在那邊、比較便宜。這個方向沒問題，但有一個重要風險點要先跟你確認：</p>
-  <p>你現有的Hetzner伺服器 <code>[redacted-other-project-host]</code>（CX33，Helsinki）目前是 <code>trading-monorepo</code> 專案的<strong>正式環境</strong>，跑著10個Docker容器，包含即時交易機器人。這台機器最近才因為SSH金鑰救援花了兩次重開機才修復，而且：</p>
-  <ul>
-    <li>目前有一個<strong>還沒查出根因的OOM(記憶體不足)問題</strong>：曾觀察到某個python程序被系統持續kill掉又重啟的迴圈，還沒排查完成</li>
-    <li><code>sam</code>帳號的密碼跟SSH私鑰<strong>都沒有備份在任何密碼管理工具裡</strong>，目前唯一的存取管道就是這台機器上的金鑰</li>
-  </ul>
+  <h2>一、雲端部署：建議跟既有正式環境分開機器</h2>
+  <p>你提到上雲要用Hetzner，因為side projects都部署在那邊、比較便宜。這個方向沒問題，但有一個重要風險點要先跟你確認：你另外有一台Hetzner伺服器正在跑別的專案的正式環境（服務真實使用中），建議InvoSnap不要跟它共用機器——兩個專案完全不相關，一旦InvoSnap這邊出問題沒必要拖累到正式環境。</p>
   <div class="callout conclusion">
-    <strong>建議：不要把InvoSnap跑在 [redacted-other-project-host] 上。</strong>理由：(1) InvoSnap是完全不相關的餐飲小工具，混進交易機器人的正式環境，一旦InvoSnap這邊出問題，有機會拖累到正在跑真錢交易的機器人，風險不對等；(2) 那台機器本身已有未解的OOM問題，資源餘裕不明；(3) Hetzner入門級機型月費約€4~5，比起潛在風險，另開一台機器的成本可忽略。建議在同一個Hetzner帳號下另開一台小規格新機器（CX22等級即可）專門跑InvoSnap，跟 [redacted-other-project-host] 完全隔離。
+    <strong>建議：另外開一台小規格新機器專門跑InvoSnap。</strong>Hetzner入門級機型月費約€4~5，比起讓既有正式環境受影響的風險，這筆成本可忽略，兩邊完全隔離。
   </div>
-  <p style="font-size:0.85rem;color:var(--text-dim)">這點需要你明確拍板，因為涉及是否要花錢開新機器、以及你對那台交易機器人主機現況比較熟悉。</p>
+  <p style="font-size:0.85rem;color:var(--text-dim)">這點需要你明確拍板，因為涉及是否要花錢開新機器。</p>
 
   <h2>二、一定要你決定/提供的事項</h2>
   <div class="table-wrap"><table>
